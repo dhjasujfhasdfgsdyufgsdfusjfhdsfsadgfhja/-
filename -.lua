@@ -1,11 +1,11 @@
---@ kiwi_api.lua - V1.0.5
+-- Version
+Ver = "v1.0.55"
+Upd = "better money bag scaling, SetDragDistance(), Print(), any heavy object can now be dragged and rotated"
 
 -- Place Check
 if game.PlaceId ~= 70876832253163 then
 	return
 end
-
-warn("kiwi_api.lua - V1.0.5")
 
 -- Services
 Players = game:GetService("Players")
@@ -42,17 +42,32 @@ KiwiAPI = {}
 KiwiAPI.LeaderstatsSetup = false
 KiwiAPI.MoneyUpdating = false
 KiwiAPI.FakeMoney = 0
+KiwiAPI.DragDistance = 10
 
 -- Misc Functions
+KiwiAPI.Print = function(text: string, start: string?, printType, pure: boolean?)
+	printType = printType or print
+	
+	local prefix = pure and start .. " " or "KiwiAPI -->"
+	printType(start and prefix .. " " .. text or text)
+end
+
 KiwiAPI.GetMoney = function()
 	local leaderstats: Folder = LocalPlayer.leaderstats
-	local Money: IntValue = leaderstats.Money
+	local Money: IntValue = leaderstats:FindFirstChild("Money")
 
-	return Money
+	if leaderstats and Money then
+		return Money
+	end
+	
+	return KiwiAPI.Print("KiwiAPI.GetMoney --> failed grabbing leaderstats & money.", "⛔", warn, true)
 end
 
 KiwiAPI.HandleLeaderstatsUpdates = function()
-	if KiwiAPI.LeaderstatsSetup then return end
+	if KiwiAPI.LeaderstatsSetup then
+		return
+	end
+	
 	KiwiAPI.LeaderstatsSetup = true
 
 	local Money = KiwiAPI.GetMoney()
@@ -73,9 +88,13 @@ KiwiAPI.HandleLeaderstatsUpdates = function()
 end
 
 -- Important Functions
+KiwiAPI.SetDragDistance = function(distance: number)
+	KiwiAPI.DragDistance = distance
+end
+
 KiwiAPI.AddFakeMoney = function(amount: number)
 	if type(amount) ~= "number" then
-		return
+		return KiwiAPI.Print("KiwiAPI.AddFakeMoney --> amount must be a number.", "⚠️", warn, true)
 	end
 	
 	local Money = KiwiAPI.GetMoney()
@@ -101,21 +120,21 @@ KiwiAPI.MakeSellable = function(object: Model, amount: number)
 					local Money_Bag: Model = game:GetObjects(Money_Bag_ID)[1]
 					
 					if amount >= 45 then
-						Money_Bag.MoneyBag.Size = Vector3.new(4.063, 3.741, 4.063)
+						Money_Bag:ScaleTo(3)
 						Money_Bag.MoneyBag.BillboardGui.Size = UDim2.new(3, 0, 1.125, 0)
 						Money_Bag.MoneyBag.BillboardGui.MaxDistance = 75
 						Money_Bag.MoneyBag.CollectPrompt.MaxActivationDistance = 30
 						Money_Bag.MoneyBag.Collect.RollOffMaxDistance = 30000
 						Money_Bag.MoneyBag.Collect.RollOffMinDistance = 30
 					elseif amount >= 21 then
-						Money_Bag.MoneyBag.Size = Vector3.new(2.682, 2.469, 2.682)
+						Money_Bag:ScaleTo(1.98)
 						Money_Bag.MoneyBag.BillboardGui.Size = UDim2.new(1.98, 0, 0.743, 0)
 						Money_Bag.MoneyBag.BillboardGui.MaxDistance = 49.5
 						Money_Bag.MoneyBag.CollectPrompt.MaxActivationDistance = 19.8
 						Money_Bag.MoneyBag.Collect.RollOffMaxDistance = 19800
 						Money_Bag.MoneyBag.Collect.RollOffMinDistance = 19.8
 					elseif amount >= 1 then
-						Money_Bag.MoneyBag.Size = Vector3.new(1.463, 1.347, 1.463)
+						Money_Bag:ScaleTo(1.08)
 						Money_Bag.MoneyBag.BillboardGui.Size = UDim2.new(1.08, 0, 0.405, 0)
 						Money_Bag.MoneyBag.BillboardGui.MaxDistance = 27
 						Money_Bag.MoneyBag.CollectPrompt.MaxActivationDistance = 10.8
@@ -151,10 +170,11 @@ KiwiAPI.MakeSellable = function(object: Model, amount: number)
 end
 
 KiwiAPI.MakeCrafting = function(data)
-	local hrp = Character:FindFirstChild("HumanoidRootPart")
-	if Character and hrp then
-		local forward = hrp.CFrame.LookVector
-		local positionInFront = hrp.Position + (forward * data.distance)
+	local HRP = Character:FindFirstChild("HumanoidRootPart")
+	
+	if Character and HRP then
+		local forward = HRP.CFrame.LookVector
+		local positionInFront = HRP.Position + (forward * data.distance)
 
 		local raycastParams = RaycastParams.new()
 		raycastParams.FilterDescendantsInstances = {Character}
@@ -256,6 +276,8 @@ KiwiAPI.MakeCrafting = function(data)
 				end
 			end
 		end
+	else
+		KiwiAPI.Print("KiwiAPI.MakeCrafting --> failed grabbing character & humanoidrootpart.", "⛔", warn, true)
 	end
 end
 
@@ -267,6 +289,8 @@ end
 
 -- Initialize
 _G.KiwiAPI = KiwiAPI
+KiwiAPI.Print(Ver)
+KiwiAPI.Print("latest: " .. Upd)
 
 -- Pickup System
 local l_LocalPlayer_0 = game:GetService("Players").LocalPlayer
@@ -279,7 +303,7 @@ local v7 = require(ReplicatedStorage.Client.DataBanks.ActionData)
 local l_PickUpTool_0 = ReplicatedStorage.Remotes.Tool.PickUpTool
 local l_DropTool_0 = ReplicatedStorage.Remotes.Tool.DropTool
 local v10 = nil
-local function v14(v11) --[[ Line: 27 ]] --[[ Name: getCurrentlyHeldTool ]]
+local function getCurrentlyHeldTool(v11)
 	if not v11 then
 		return nil
 	else
@@ -291,8 +315,7 @@ local function v14(v11) --[[ Line: 27 ]] --[[ Name: getCurrentlyHeldTool ]]
 		return nil
 	end
 end
-local function v17(_, v16) --[[ Line: 41 ]] --[[ Name: pickObjectActionCallback ]]
-	-- upvalues: v10 (ref), l_PickUpTool_0 (copy)
+local function pickObjectActionCallback(_, v16)
 	if v16 ~= Enum.UserInputState.Begin then
 		return Enum.ContextActionResult.Pass
 	else
@@ -324,12 +347,11 @@ local function v17(_, v16) --[[ Line: 41 ]] --[[ Name: pickObjectActionCallback 
 		return Enum.ContextActionResult.Sink
 	end
 end
-local function v21(_, v19) --[[ Line: 53 ]] --[[ Name: dropObjectActionCallback ]]
-	-- upvalues: v14 (copy), l_LocalPlayer_0 (copy), l_DropTool_0 (copy)
+local function dropObjectActionCallback(_, v19)
 	if v19 ~= Enum.UserInputState.Begin then
 		return Enum.ContextActionResult.Pass
 	else
-		local v20 = v14(l_LocalPlayer_0.Character)
+		local v20 = getCurrentlyHeldTool(l_LocalPlayer_0.Character)
 		if v20 then
 			if v20:HasTag("KiwiPickable") then
 				local RandomAttribute = v20:GetAttribute("Random")
@@ -355,11 +377,10 @@ local function v21(_, v19) --[[ Line: 53 ]] --[[ Name: dropObjectActionCallback 
 		return Enum.ContextActionResult.Sink
 	end
 end
-local function v24(v22) --[[ Line: 66 ]] --[[ Name: updatePickBound ]]
-	-- upvalues: v6 (copy), v7 (copy), v17 (copy)
+local function updatePickBound(v22)
 	local v23 = v6.isBound(v7.Action.PickUpObject)
 	if v22 and not v23 then
-		v6.bindAction(v7.Action.PickUpObject, v17, v7.ActionContext[v7.Action.PickUpObject], Enum.KeyCode.E, Enum.KeyCode.DPadLeft, v7.ActionPriority.Low)
+		v6.bindAction(v7.Action.PickUpObject, pickObjectActionCallback, v7.ActionContext[v7.Action.PickUpObject], Enum.KeyCode.E, Enum.KeyCode.DPadLeft, v7.ActionPriority.Low)
 		return
 	else
 		if not v22 and v23 then
@@ -368,11 +389,10 @@ local function v24(v22) --[[ Line: 66 ]] --[[ Name: updatePickBound ]]
 		return
 	end
 end
-local function v27(v25) --[[ Line: 83 ]] --[[ Name: updateDropBound ]]
-	-- upvalues: v6 (copy), v7 (copy), v21 (copy)
+local function updateDropBound(v25)
 	local v26 = v6.isBound(v7.Action.DropObject)
 	if v25 and not v26 then
-		v6.bindAction(v7.Action.DropObject, v21, v7.ActionContext[v7.Action.DropObject], Enum.KeyCode.Backspace, Enum.KeyCode.DPadLeft, v7.ActionPriority.Low)
+		v6.bindAction(v7.Action.DropObject, dropObjectActionCallback, v7.ActionContext[v7.Action.DropObject], Enum.KeyCode.Backspace, Enum.KeyCode.DPadLeft, v7.ActionPriority.Low)
 		return
 	else
 		if not v25 and v26 then
@@ -381,16 +401,15 @@ local function v27(v25) --[[ Line: 83 ]] --[[ Name: updateDropBound ]]
 		return
 	end
 end
-local function v31() --[[ Line: 100 ]] --[[ Name: update ]]
-	-- upvalues: l_LocalPlayer_0 (copy), v24 (copy), v27 (copy), l_HoveringObject_0 (copy), v14 (copy), l_isValidDraggableObject_0 (copy), l_isDraggableObjectWelded_0 (copy), v10 (ref)
+local function update()
 	local l_Character_0 = l_LocalPlayer_0.Character
 	if not l_Character_0 then
-		v24(false)
-		v27(false)
+		updatePickBound(false)
+		updateDropBound(false)
 		return
 	else
 		local l_Value_0 = l_HoveringObject_0.Value
-		local v30 = v14(l_Character_0)
+		local v30 = getCurrentlyHeldTool(l_Character_0)
 		if l_Value_0 and l_isValidDraggableObject_0(l_Value_0) and not l_isDraggableObjectWelded_0(l_Value_0) and l_Value_0:HasTag("ToolObject") and (not l_Value_0:GetAttribute("OwnerId") or l_Value_0:GetAttribute("OwnerId") == l_LocalPlayer_0.UserId) then
 			v10 = l_Value_0
 			if l_Value_0:HasTag("ShopItem") then
@@ -399,33 +418,30 @@ local function v31() --[[ Line: 100 ]] --[[ Name: update ]]
 		else
 			v10 = nil
 		end
-		v24(v10 ~= nil)
-		v27(v30 ~= nil)
+		updatePickBound(v10 ~= nil)
+		updateDropBound(v30 ~= nil)
 		return
 	end
 end
-local function v36(v32) --[[ Line: 130 ]] --[[ Name: onCharacterAdded ]]
-	-- upvalues: v31 (copy), v24 (copy), v27 (copy)
-	local function v33() --[[ Line: 131 ]] --[[ Name: handleChildChanged ]]
-		-- upvalues: v31 (ref)
-		v31()
+local function onCharacterAdded(v32)
+	local function handleChildChanged()
+		update()
 	end
-	local v34 = v32.ChildAdded:Connect(v33)
-	local v35 = v32.ChildRemoved:Connect(v33)
-	v32.Destroying:Once(function() --[[ Line: 138 ]]
-		-- upvalues: v34 (copy), v35 (copy), v24 (ref), v27 (ref)
+	local v34 = v32.ChildAdded:Connect(handleChildChanged)
+	local v35 = v32.ChildRemoved:Connect(handleChildChanged)
+	v32.Destroying:Once(function()
 		v34:Disconnect()
 		v35:Disconnect()
-		v24(false)
-		v27(false)
+		updatePickBound(false)
+		updateDropBound(false)
 	end)
-	v31()
+	update()
 end
 if l_LocalPlayer_0.Character then
-	v36(l_LocalPlayer_0.Character)
+	onCharacterAdded(l_LocalPlayer_0.Character)
 end
-l_HoveringObject_0.Changed:Connect(v31)
-l_LocalPlayer_0.CharacterAdded:Connect(v36)
+l_HoveringObject_0.Changed:Connect(update)
+l_LocalPlayer_0.CharacterAdded:Connect(onCharacterAdded)
 
 -- Dragging System
 local Remotes = require(ReplicatedStorage.Shared.Remotes)
@@ -562,14 +578,14 @@ local function onServerDragRequestResponse(v86, v88)
 					v43.Name = "DragAlignPosition"
 					v43.Mode = Enum.PositionAlignmentMode.OneAttachment
 					v43.ApplyAtCenterOfMass = false
-					v43.MaxForce = 100000
+					v43.MaxForce = math.huge
 					v43.Responsiveness = 50
 					v43.Attachment0 = v42
 					v43.Parent = v33.PrimaryPart
 					v43.Position = v33.PrimaryPart.Position
 					v44.Name = "DragAlignOrientation"
 					v44.Mode = Enum.OrientationAlignmentMode.OneAttachment
-					v44.MaxTorque = 10000
+					v44.MaxTorque = math.huge
 					v44.Responsiveness = 50
 					v44.Attachment0 = v42
 					v44.Parent = v33.PrimaryPart
@@ -642,7 +658,7 @@ local function updateDrag(v79)
 	else
 		local l_CFrame_0 = CurrentCamera.CFrame
 		local l_LookVector_0 = l_CFrame_0.LookVector
-		local v82 = l_CFrame_0.Position + l_LookVector_0 * 10
+		local v82 = l_CFrame_0.Position + l_LookVector_0 * KiwiAPI.DragDistance
 		local l_v33_Pivot_0 = v33:GetPivot()
 		if ActionController.isBound(ActionData.Action.RotateObject) and ActionController.isPressed(ActionData.Action.RotateObject) then
 			v37 = true
