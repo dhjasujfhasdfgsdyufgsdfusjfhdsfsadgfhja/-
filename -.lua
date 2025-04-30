@@ -1,6 +1,6 @@
 -- Version
-Ver = "v1.0.55"
-Upd = "better money bag scaling, SetDragDistance(), Print(), any heavy object can now be dragged and rotated"
+Ver = "v1.0.65"
+Upd = "welding, storable objects soon 👀"
 
 -- Place Check
 if game.PlaceId ~= 70876832253163 then
@@ -16,6 +16,7 @@ RunService = game:GetService("RunService")
 ReplicatedStorage:WaitForChild("Client"):WaitForChild("Handlers"):WaitForChild("DraggableItemHandlers"):WaitForChild("ClientDraggableObjectHandler").Enabled = false
 ReplicatedStorage:WaitForChild("Client"):WaitForChild("Handlers"):WaitForChild("DraggableItemHandlers"):WaitForChild("ClientToolObjectHandler").Enabled = false
 
+-- Wait For Game
 repeat
 	task.wait()
 until game:IsLoaded()
@@ -106,7 +107,7 @@ KiwiAPI.AddFakeMoney = function(amount: number)
 	KiwiAPI.MoneyUpdating = false
 end
 
-KiwiAPI.MakeSellable = function(object: Model, amount: number)
+KiwiAPI.MakeSellable = function(object: Model, amount: number, noMoneyBag: boolean)
 	local function HandleSell(part: BasePart)
 		if part and part:IsA("BasePart") then
 			part.Touched:Connect(function(hit: BasePart)
@@ -115,46 +116,48 @@ KiwiAPI.MakeSellable = function(object: Model, amount: number)
 
 					ReplicatedStorage.StopDrag:Fire()
 
-					local Money = KiwiAPI.GetMoney()
+					if not noMoneyBag then
+						local Money = KiwiAPI.GetMoney()
 
-					local Money_Bag: Model = game:GetObjects(Money_Bag_ID)[1]
-					
-					if amount >= 45 then
-						Money_Bag:ScaleTo(3)
-						Money_Bag.MoneyBag.BillboardGui.Size = UDim2.new(3, 0, 1.125, 0)
-						Money_Bag.MoneyBag.BillboardGui.MaxDistance = 75
-						Money_Bag.MoneyBag.CollectPrompt.MaxActivationDistance = 30
-						Money_Bag.MoneyBag.Collect.RollOffMaxDistance = 30000
-						Money_Bag.MoneyBag.Collect.RollOffMinDistance = 30
-					elseif amount >= 21 then
-						Money_Bag:ScaleTo(1.98)
-						Money_Bag.MoneyBag.BillboardGui.Size = UDim2.new(1.98, 0, 0.743, 0)
-						Money_Bag.MoneyBag.BillboardGui.MaxDistance = 49.5
-						Money_Bag.MoneyBag.CollectPrompt.MaxActivationDistance = 19.8
-						Money_Bag.MoneyBag.Collect.RollOffMaxDistance = 19800
-						Money_Bag.MoneyBag.Collect.RollOffMinDistance = 19.8
-					elseif amount >= 1 then
-						Money_Bag:ScaleTo(1.08)
-						Money_Bag.MoneyBag.BillboardGui.Size = UDim2.new(1.08, 0, 0.405, 0)
-						Money_Bag.MoneyBag.BillboardGui.MaxDistance = 27
-						Money_Bag.MoneyBag.CollectPrompt.MaxActivationDistance = 10.8
-						Money_Bag.MoneyBag.Collect.RollOffMaxDistance = 10800
-						Money_Bag.MoneyBag.Collect.RollOffMinDistance = 10.8
-					end
-					
-					Money_Bag.Parent = workspace.RuntimeItems
-					Money_Bag.MoneyBag.CFrame = hit.CFrame * CFrame.Angles(0, math.rad(90), 0) + Vector3.new(0, 3, 0)
-					Money_Bag.MoneyBag.BillboardGui.TextLabel.Text = `${amount}`
-					Money_Bag.MoneyBag.CollectPrompt.Triggered:Connect(function()
-						if not Money_Bag:GetAttribute("Collected") then
-							Money_Bag:SetAttribute("Collected", true)
+						local Money_Bag: Model = game:GetObjects(Money_Bag_ID)[1]
 
-							Money_Bag.Parent = nil
-							Money_Bag.MoneyBag.Collect:Play()
-
-							KiwiAPI.AddFakeMoney(amount)
+						if amount >= 45 then
+							Money_Bag:ScaleTo(3)
+							Money_Bag.MoneyBag.BillboardGui.Size = UDim2.new(3, 0, 1.125, 0)
+							Money_Bag.MoneyBag.BillboardGui.MaxDistance = 75
+							Money_Bag.MoneyBag.CollectPrompt.MaxActivationDistance = 30
+							Money_Bag.MoneyBag.Collect.RollOffMaxDistance = 30000
+							Money_Bag.MoneyBag.Collect.RollOffMinDistance = 30
+						elseif amount >= 21 then
+							Money_Bag:ScaleTo(1.98)
+							Money_Bag.MoneyBag.BillboardGui.Size = UDim2.new(1.98, 0, 0.743, 0)
+							Money_Bag.MoneyBag.BillboardGui.MaxDistance = 49.5
+							Money_Bag.MoneyBag.CollectPrompt.MaxActivationDistance = 19.8
+							Money_Bag.MoneyBag.Collect.RollOffMaxDistance = 19800
+							Money_Bag.MoneyBag.Collect.RollOffMinDistance = 19.8
+						elseif amount >= 1 then
+							Money_Bag:ScaleTo(1.08)
+							Money_Bag.MoneyBag.BillboardGui.Size = UDim2.new(1.08, 0, 0.405, 0)
+							Money_Bag.MoneyBag.BillboardGui.MaxDistance = 27
+							Money_Bag.MoneyBag.CollectPrompt.MaxActivationDistance = 10.8
+							Money_Bag.MoneyBag.Collect.RollOffMaxDistance = 10800
+							Money_Bag.MoneyBag.Collect.RollOffMinDistance = 10.8
 						end
-					end)
+
+						Money_Bag.Parent = workspace.RuntimeItems
+						Money_Bag.MoneyBag.CFrame = hit.CFrame * CFrame.Angles(0, math.rad(90), 0) + Vector3.new(0, 3, 0)
+						Money_Bag.MoneyBag.BillboardGui.TextLabel.Text = `${amount}`
+						Money_Bag.MoneyBag.CollectPrompt.Triggered:Connect(function()
+							if not Money_Bag:GetAttribute("Collected") then
+								Money_Bag:SetAttribute("Collected", true)
+
+								Money_Bag.Parent = nil
+								Money_Bag.MoneyBag.Collect:Play()
+
+								KiwiAPI.AddFakeMoney(amount)
+							end
+						end)
+					end
 				end
 			end)
 		end
@@ -285,6 +288,10 @@ KiwiAPI.MakePickable = function(tool: Model, name: string, size_multiplier: numb
 	tool:AddTag("KiwiPickable")
 	tool:SetAttribute("Name", name)
 	tool:SetAttribute("Size", size_multiplier)
+end
+
+KiwiAPI.MakeDraggable = function(model: Model)
+	model:AddTag("DraggableObject")
 end
 
 -- Initialize
@@ -625,11 +632,31 @@ local function handleWeldAction(_, v74)
 	elseif v32 then
 		if v35 then
 			RequestWeld:FireServer(v33, v35)
+			
+			task.wait(0.1)
+			
+			if not v33.PrimaryPart:FindFirstChild("DragWeldConstraint") then
+				local DragWeldConstraint = Instance.new("WeldConstraint", v33.PrimaryPart)
+				DragWeldConstraint.Part0 = v33.PrimaryPart
+				DragWeldConstraint.Part1 = v35
+				DragWeldConstraint.Name = "DragWeldConstraint"
+				
+				if firesignal then
+					firesignal(ReplicatedStorage.Shared.Network.RemoteEvent.RequestWeld.OnClientEvent, true)
+				end
+			end
 		end
 		return Enum.ContextActionResult.Pass
 	else
 		if v34 then
 			RequestUnweld:FireServer(v34)
+
+			task.wait(0.1)
+
+			local DragWeldConstraint = v34.PrimaryPart:FindFirstChild("DragWeldConstraint")
+			if DragWeldConstraint then
+				DragWeldConstraint:Destroy()
+			end
 		end
 		return Enum.ContextActionResult.Sink
 	end
