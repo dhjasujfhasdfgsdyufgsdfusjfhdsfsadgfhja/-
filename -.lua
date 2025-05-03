@@ -1,6 +1,6 @@
 -- Version
-Ver = "v1.0.7"
-Upd = "storable objects"
+Ver = "v1.0.71"
+Upd = "storable objects | money bag sizing fix"
 
 -- Place Check
 if game.PlaceId ~= 70876832253163 then
@@ -23,10 +23,12 @@ repeat
 until game:IsLoaded()
 
 -- Main Variables
+LatestVersion = string.match(game:HttpGet("https://raw.githubusercontent.com/dhjasujfhasdfgsdyufgsdfusjfhdsfsadgfhja/-/refs/heads/main/ver"), "%S+")
+LatestUpdateLog = game:HttpGet("https://raw.githubusercontent.com/dhjasujfhasdfgsdyufgsdfusjfhdsfsadgfhja/-/refs/heads/main/log")
 LocalPlayer = Players.LocalPlayer
 Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 
--- Asset ID's
+-- Asset IDs
 Money_Bag_ID = "rbxassetid://71632786167654"
 Table_ID = "rbxassetid://81831823492227"
 
@@ -48,8 +50,7 @@ KiwiAPI.DragDistance = 10
 -- Misc Functions
 KiwiAPI.Print = function(text: string, printType)
 	if not text then
-		KiwiAPI.Print("⛔ KiwiAPI.Print --> no text.", error)
-		return
+		return KiwiAPI.Print("⛔ KiwiAPI.Print --> no text.", error)
 	end
 	
 	printType = printType or print
@@ -70,6 +71,10 @@ end
 
 -- Important Functions
 KiwiAPI.SetDragDistance = function(distance: number)
+	if type(distance) ~= "number" then
+		return KiwiAPI.Print("⛔ KiwiAPI.SetDragDistance --> distance must be a number.", error)
+	end
+	
 	KiwiAPI.DragDistance = distance
 end
 
@@ -86,6 +91,16 @@ KiwiAPI.AddFakeMoney = function(amount: number)
 end
 
 KiwiAPI.MakeSellable = function(object: Model, amount: number, noMoneyBag: boolean)
+	if not object then
+		return KiwiAPI.Print("⛔ KiwiAPI.MakeSellable --> object must exist.", error)
+	end
+	
+	if not amount then
+		amount = 0
+		
+		KiwiAPI.Print("⚠️ KiwiAPI.MakeSellable --> no amount was inputted, set to 0.", warn)
+	end
+	
 	local function HandleSell(part: BasePart)
 		if part and part:IsA("BasePart") then
 			part.Touched:Connect(function(hit: BasePart)
@@ -113,7 +128,7 @@ KiwiAPI.MakeSellable = function(object: Model, amount: number, noMoneyBag: boole
 							Money_Bag.MoneyBag.CollectPrompt.MaxActivationDistance = 19.8
 							Money_Bag.MoneyBag.Collect.RollOffMaxDistance = 19800
 							Money_Bag.MoneyBag.Collect.RollOffMinDistance = 19.8
-						elseif amount >= 1 then
+						elseif amount >= 1 or amount <= 0 then
 							Money_Bag:ScaleTo(1.08)
 							Money_Bag.MoneyBag.BillboardGui.Size = UDim2.new(1.08, 0, 0.405, 0)
 							Money_Bag.MoneyBag.BillboardGui.MaxDistance = 27
@@ -145,10 +160,42 @@ KiwiAPI.MakeSellable = function(object: Model, amount: number, noMoneyBag: boole
 		HandleSell(object.PrimaryPart)
 	elseif object:IsA("BasePart") then
 		HandleSell(object)
+	else
+		KiwiAPI.Print("⛔ KiwiAPI.MakeSellable --> object must be a model or basepart.", error)
 	end
 end
 
 KiwiAPI.MakeCrafting = function(data)
+	local defaults = {
+		distance = 15,
+		height = 2,
+		items = {
+			[1] = "GoldNugget",
+			[2] = "",
+			[3] = "",
+			[4] = "",
+			[5] = "",
+			[6] = "",
+			[7] = "",
+			[8] = "",
+			[9] = ""
+		},
+		reward = "rbxassetid://79581329552900",
+		cost = 50,
+		name = "Gold Bar",
+		color = Color3.fromRGB(239, 184, 56),
+		material = "Metal",
+		transparency = 0,
+		extra = function() end
+	}
+
+	for key, value in pairs(defaults) do
+		if data[key] == nil then
+			data[key] = value
+			KiwiAPI.Print("⚠️ KiwiAPI.MakeCrafting --> property missing '" .. key .. "', replaced with '" .. tostring(value) .. "'.", warn)
+		end
+	end
+	
 	local HRP = Character:FindFirstChild("HumanoidRootPart")
 	
 	if Character and HRP then
@@ -255,22 +302,42 @@ KiwiAPI.MakeCrafting = function(data)
 				end
 			end
 		end
-	else
-		KiwiAPI.Print("⛔ KiwiAPI.MakeCrafting --> failed grabbing character and humanoidrootpart.", error)
+		
+		return
 	end
+	
+	KiwiAPI.Print("⛔ KiwiAPI.MakeCrafting --> failed grabbing character and humanoidrootpart.", error)
 end
 
-KiwiAPI.MakePickable = function(tool: Model, name: string, size_multiplier: number)
-	tool:AddTag("KiwiPickable")
-	tool:SetAttribute("Name", name)
-	tool:SetAttribute("Size", size_multiplier)
+KiwiAPI.MakePickable = function(item: Model, shrink_multiplier: number)
+	if not item then
+		return KiwiAPI.Print("⛔ KiwiAPI.MakePickable --> no item was inputted.", error)
+	end
+	
+	if not shrink_multiplier then
+		shrink_multiplier = 1
+		
+		KiwiAPI.Print("⚠️ KiwiAPI.MakePickable --> no shrink_multiplier was inputted, set to 1.", warn)
+	end
+	
+	item:AddTag("KiwiPickable")
+	item:SetAttribute("Name", item.Name)
+	item:SetAttribute("Size", shrink_multiplier)
 end
 
 KiwiAPI.MakeDraggable = function(item: Model)
+	if not item then
+		return KiwiAPI.Print("⛔ KiwiAPI.MakeDraggable --> no item was inputted.", error)
+	end
+	
 	item:AddTag("DraggableObject")
 end
 
 KiwiAPI.MakeStorable = function(item: Model)
+	if not item then
+		return KiwiAPI.Print("⛔ KiwiAPI.MakeStorable --> no item was inputted.", error)
+	end
+	
 	item:AddTag("KiwiStorable")
 end
 
@@ -293,8 +360,14 @@ end)
 -- Initialize
 _G.KiwiAPI = KiwiAPI
 
-KiwiAPI.Print("KiwiAPI --> " .. Ver, print)
-KiwiAPI.Print("KiwiAPI --> Latest Update: " .. Upd, print)
+KiwiAPI.Print("ℹ️  KiwiAPI --> " .. Ver .. (Ver == LatestVersion and " (latest)" or " (outdated)"), print)
+KiwiAPI.Print("ℹ️  KiwiAPI --> current version update: " .. Upd, print)
+
+if Ver ~= LatestVersion then
+	KiwiAPI.Print("", print)
+	KiwiAPI.Print("ℹ️  KiwiAPI --> latest version: " .. LatestVersion, warn)
+	KiwiAPI.Print("ℹ️  KiwiAPI --> latest version update: " .. LatestUpdateLog, warn)
+end
 
 -- Store System
 coroutine.wrap(function()
