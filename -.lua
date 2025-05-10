@@ -1,6 +1,5 @@
 -- Version
-Ver = "v1.0.71"
-Upd = "storable objects | money bag sizing fix"
+Ver = "v1.0.72"
 
 -- Place Check
 if game.PlaceId ~= 70876832253163 then
@@ -16,6 +15,7 @@ RunService = game:GetService("RunService")
 ReplicatedStorage:WaitForChild("Client"):WaitForChild("Handlers"):WaitForChild("DraggableItemHandlers"):WaitForChild("ClientDraggableObjectHandler").Enabled = false
 ReplicatedStorage:WaitForChild("Client"):WaitForChild("Handlers"):WaitForChild("DraggableItemHandlers"):WaitForChild("ClientToolObjectHandler").Enabled = false
 ReplicatedStorage:WaitForChild("Client"):WaitForChild("Handlers"):WaitForChild("DraggableItemHandlers"):WaitForChild("ClientObjectStorageHandler").Enabled = false
+ReplicatedStorage:WaitForChild("Client"):WaitForChild("Handlers"):WaitForChild("DraggableItemHandlers"):WaitForChild("ClientActivatableObjectHandler").Enabled = false
 
 -- Wait For Game
 repeat
@@ -24,9 +24,9 @@ until game:IsLoaded()
 
 -- Main Variables
 LatestVersion = string.match(game:HttpGet("https://raw.githubusercontent.com/dhjasujfhasdfgsdyufgsdfusjfhdsfsadgfhja/-/refs/heads/main/ver"), "%S+")
-LatestUpdateLog = game:HttpGet("https://raw.githubusercontent.com/dhjasujfhasdfgsdyufgsdfusjfhdsfsadgfhja/-/refs/heads/main/log")
 LocalPlayer = Players.LocalPlayer
 Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+ItemFunctions = {}
 
 -- Asset IDs
 Money_Bag_ID = "rbxassetid://71632786167654"
@@ -341,6 +341,23 @@ KiwiAPI.MakeStorable = function(item: Model)
 	item:AddTag("KiwiStorable")
 end
 
+KiwiAPI.MakePickupFunction = function(item: Model, action)
+	if not item then
+		return KiwiAPI.Print("⛔ KiwiAPI.MakePickupFunction --> no item was inputted.", error)
+	end
+	
+	if not action then
+		return KiwiAPI.Print("⛔ KiwiAPI.MakePickupFunction --> no action was inputted.", error)
+	end
+	
+	if ItemFunctions[item] then
+		KiwiAPI.Print("⚠️ KiwiAPI.MakePickupFunction --> item already has a current function, overriding.", error)
+	end
+	
+	item:AddTag("KiwiFunction")
+	ItemFunctions[item] = action
+end
+
 -- Other
 Money = KiwiAPI.GetMoney()
 Money:GetPropertyChangedSignal("Value"):Connect(function()
@@ -361,16 +378,112 @@ end)
 _G.KiwiAPI = KiwiAPI
 
 KiwiAPI.Print("ℹ️  KiwiAPI --> " .. Ver .. (Ver == LatestVersion and " (latest)" or " (outdated)"), print)
-KiwiAPI.Print("ℹ️  KiwiAPI --> current version update: " .. Upd, print)
 
 if Ver ~= LatestVersion then
 	KiwiAPI.Print("", print)
 	KiwiAPI.Print("ℹ️  KiwiAPI --> latest version: " .. LatestVersion, warn)
-	KiwiAPI.Print("ℹ️  KiwiAPI --> latest version update: " .. LatestUpdateLog, warn)
 end
 
+-- Interact System
+task.spawn(function()
+	task.wait(3)
+	
+	local v2 = require(ReplicatedStorage.Shared.Remotes)
+	local l_LocalPlayer_0 = Players.LocalPlayer
+	local l_Shared_0 = ReplicatedStorage.Shared
+	local v6 = require(l_Shared_0.Utils.DraggableObjectUtil)
+	local l_isValidDraggableObject_0 = v6.isValidDraggableObject
+	local v9 = require(ReplicatedStorage.Shared.SharedConstants.Tag)
+	local v11 = require(ReplicatedStorage.Client.DataBanks.ActionData)
+	local l_script_FirstAncestor_0 = ReplicatedStorage:FindFirstChild("Client")
+	local l_FirstChild_0 = l_script_FirstAncestor_0.Handlers:FindFirstChild("ClientDraggableObjectHandler", true)
+	local l_HoveringObject_0 = l_FirstChild_0.HoveringObject
+	local v16 = require(l_script_FirstAncestor_0.Controllers.ActionController)
+	local v17 = require(l_script_FirstAncestor_0.DataBanks.ClientActivatableObjectCallbacks)
+	local l_ActivateObject_0 = v2.Promises.ActivateObject
+	local v19 = nil
+	local v20 = false
+	local function activateObjectActionCallback(_, v22)
+		if v22 ~= Enum.UserInputState.Begin then
+			return Enum.ContextActionResult.Pass
+		else
+			if v19 then
+				if v19:HasTag("KiwiFunction") then
+					warn("has")
+					
+					local Action = ItemFunctions[v19]
+					if Action then
+						Action()
+					end
+					
+					return
+				end
+				
+				l_ActivateObject_0:InvokeServer(v19):andThen(function(v23, ...)
+					if v23 then
+						local v24 = v17[v19.Name]
+						if v24 then
+							v24(v19, ...)
+						end
+					end
+				end):timeout(10)
+			end
+			return Enum.ContextActionResult.Sink
+		end
+	end
+	local function updateBind(v26)
+		if v26 and not v20 then
+			v16.bindAction(v11.Action.ActivateObject, activateObjectActionCallback, v11.ActionContext[v11.Action.ActivateObject], Enum.KeyCode.E, Enum.KeyCode.DPadLeft, 3)
+			v20 = true
+		elseif not v26 and v20 then
+			v16.unbindAction(v11.Action.ActivateObject)
+			v20 = false
+		end
+		if v20 and v19 then
+			local l_v19_Attribute_0 = v19:GetAttribute("ActivateText")
+			v16.setButtonText(v11.Action.ActivateObject, l_v19_Attribute_0 or "Activate")
+		end
+	end
+	local function update()
+		if not l_LocalPlayer_0.Character then
+			updateBind(false)
+			return
+		else
+			local l_Value_0 = l_HoveringObject_0.Value
+			if l_Value_0 and l_isValidDraggableObject_0(l_Value_0) and l_Value_0:HasTag(v9.Activatable) and (not l_Value_0:GetAttribute("OwnerId") or l_Value_0:GetAttribute("OwnerId") == l_LocalPlayer_0.UserId) then
+				v19 = l_Value_0
+				if l_Value_0:HasTag("ShopItem") then
+					v19 = nil
+				end
+			else
+				v19 = nil
+			end
+			updateBind(v19 ~= nil)
+			return
+		end
+	end
+	local function onCharacterAdded(v31)
+		local function handleChildChanged()
+			update()
+		end
+		local v33 = v31.ChildAdded:Connect(handleChildChanged)
+		local v34 = v31.ChildRemoved:Connect(handleChildChanged)
+		v31.Destroying:Once(function()
+			v33:Disconnect()
+			v34:Disconnect()
+			updateBind(false)
+		end)
+		update()
+	end
+	if l_LocalPlayer_0.Character then
+		onCharacterAdded(l_LocalPlayer_0.Character)
+	end
+	l_HoveringObject_0.Changed:Connect(update)
+	l_LocalPlayer_0.CharacterAdded:Connect(onCharacterAdded)
+end)
+
 -- Store System
-coroutine.wrap(function()
+task.spawn(function()
 	local l_Players_0 = game:GetService("Players")
 	local l_RunService_0 = game:GetService("RunService")
 	local l_LocalPlayer_0 = l_Players_0.LocalPlayer
@@ -532,10 +645,10 @@ coroutine.wrap(function()
 		task.spawn(onCharacterAdded, l_LocalPlayer_0.Character)
 	end
 	l_LocalPlayer_0.CharacterAdded:Connect(onCharacterAdded)
-end)()
+end)
 
 -- Pickup System
-coroutine.wrap(function()
+task.spawn(function()
 	local l_LocalPlayer_0 = game:GetService("Players").LocalPlayer
 	local l_HoveringObject_0 = ReplicatedStorage.Client.Handlers.DraggableItemHandlers.ClientDraggableObjectHandler.HoveringObject
 	local v3 = require(ReplicatedStorage.Shared.Utils.DraggableObjectUtil)
@@ -685,10 +798,10 @@ coroutine.wrap(function()
 	end
 	l_HoveringObject_0.Changed:Connect(update)
 	l_LocalPlayer_0.CharacterAdded:Connect(onCharacterAdded)
-end)()
+end)
 
 -- Dragging System
-coroutine.wrap(function()
+task.spawn(function()
 	local Remotes = require(ReplicatedStorage.Shared.Remotes)
 	local RequestStartDrag = Remotes.Events.RequestStartDrag
 	local UpdateDrag = Remotes.Events.UpdateDrag
@@ -1083,4 +1196,4 @@ coroutine.wrap(function()
 		HoveringObject.Value = if v34 ~= v33 then v34 else nil
 		DraggingObject.Value = v33
 	end)
-end)()
+end)
