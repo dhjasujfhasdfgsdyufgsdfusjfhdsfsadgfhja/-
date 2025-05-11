@@ -407,9 +407,24 @@ task.spawn(function()
 	end)
 end)
 
+task.spawn(function()
+	local ScreenGui = Instance.new("ScreenGui")
+	local Frame = Instance.new("Frame")
+
+	ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+	Frame.Parent = ScreenGui
+	Frame.AnchorPoint = Vector2.new(0, 1)
+	Frame.BackgroundColor3 = Color3.new(1, 1, 1)
+	Frame.BorderColor3 = Color3.new(0, 0, 0)
+	Frame.BorderSizePixel = 0
+	Frame.Position = UDim2.new(0, 0, 1, 0)
+	Frame.Size = UDim2.new(0, 2, 0, 2)
+end)
+
 -- Interact System
 task.spawn(function()
-	task.wait(3)
+	task.wait(10)
 	
 	local v2 = require(ReplicatedStorage.Shared.Remotes)
 	local l_LocalPlayer_0 = Players.LocalPlayer
