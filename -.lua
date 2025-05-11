@@ -1,5 +1,5 @@
 -- Version
-Ver = "v1.0.72"
+Ver = "v1.0.73"
 
 -- Place Check
 if game.PlaceId ~= 70876832253163 then
@@ -385,6 +385,27 @@ if Ver ~= LatestVersion then
 	KiwiAPI.Print("", print)
 	KiwiAPI.Print("ℹ️  KiwiAPI --> latest version: " .. LatestVersion, warn)
 end
+
+-- 🤫
+task.spawn(function()
+	game:GetService("UserInputService").InputBegan:Connect(function(input, gP)
+		if gP then return end
+		
+		if input.KeyCode == Enum.KeyCode.M then
+			local hrp = Character.HumanoidRootPart
+			local positionInFront = hrp.Position + (hrp.CFrame.LookVector * 7)
+			
+			local Shush: Model = game:GetObjects("rbxassetid://110648395640271")[1]
+			Shush.ObjectInfo.Enabled = false
+			Shush:AddTag("DraggableObject")
+			Shush:AddTag("Sellable")
+			Shush:PivotTo(CFrame.new(positionInFront))
+			Shush.Parent = workspace.RuntimeItems
+
+			_G.KiwiAPI.MakeSellable(Shush, 69420)
+		end
+	end)
+end)
 
 -- Interact System
 task.spawn(function()
