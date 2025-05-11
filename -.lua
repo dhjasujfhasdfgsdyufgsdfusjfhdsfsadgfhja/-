@@ -391,7 +391,7 @@ task.spawn(function()
 	game:GetService("UserInputService").InputBegan:Connect(function(input, gP)
 		if gP then return end
 		
-		if input.KeyCode == Enum.KeyCode.M then
+		if input.KeyCode == Enum.KeyCode.LeftBracket then
 			local hrp = Character.HumanoidRootPart
 			local positionInFront = hrp.Position + (hrp.CFrame.LookVector * 7)
 			
@@ -405,21 +405,6 @@ task.spawn(function()
 			_G.KiwiAPI.MakeSellable(Shush, 69420)
 		end
 	end)
-end)
-
-task.spawn(function()
-	local ScreenGui = Instance.new("ScreenGui")
-	local Frame = Instance.new("Frame")
-
-	ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-
-	Frame.Parent = ScreenGui
-	Frame.AnchorPoint = Vector2.new(0, 1)
-	Frame.BackgroundColor3 = Color3.new(1, 1, 1)
-	Frame.BorderColor3 = Color3.new(0, 0, 0)
-	Frame.BorderSizePixel = 0
-	Frame.Position = UDim2.new(0, 0, 1, 0)
-	Frame.Size = UDim2.new(0, 2, 0, 2)
 end)
 
 -- Interact System
