@@ -101,6 +101,8 @@ KiwiAPI.MakeSellable = function(object: Model, amount: number, noMoneyBag: boole
 		KiwiAPI.Print("⚠️ KiwiAPI.MakeSellable --> no amount was inputted, set to 0.", warn)
 	end
 	
+	KiwiAPI.MakeStorable(object)
+	
 	local function HandleSell(part: BasePart)
 		if part and part:IsA("BasePart") then
 			part.Touched:Connect(function(hit: BasePart)
