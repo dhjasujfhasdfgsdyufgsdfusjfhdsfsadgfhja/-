@@ -1,5 +1,6 @@
 -- Version
-Ver = "v1.0.73"
+Ver = "v1.0.74"
+Upd = "Fixed something to do with money bags / Better pick up system :)"
 
 -- Place Check
 if game.PlaceId ~= 70876832253163 then
@@ -118,25 +119,10 @@ KiwiAPI.MakeSellable = function(object: Model, amount: number, noMoneyBag: boole
 
 						if amount >= 45 then
 							Money_Bag:ScaleTo(3)
-							Money_Bag.MoneyBag.BillboardGui.Size = UDim2.new(3, 0, 1.125, 0)
-							Money_Bag.MoneyBag.BillboardGui.MaxDistance = 75
-							Money_Bag.MoneyBag.CollectPrompt.MaxActivationDistance = 30
-							Money_Bag.MoneyBag.Collect.RollOffMaxDistance = 30000
-							Money_Bag.MoneyBag.Collect.RollOffMinDistance = 30
 						elseif amount >= 21 then
 							Money_Bag:ScaleTo(1.98)
-							Money_Bag.MoneyBag.BillboardGui.Size = UDim2.new(1.98, 0, 0.743, 0)
-							Money_Bag.MoneyBag.BillboardGui.MaxDistance = 49.5
-							Money_Bag.MoneyBag.CollectPrompt.MaxActivationDistance = 19.8
-							Money_Bag.MoneyBag.Collect.RollOffMaxDistance = 19800
-							Money_Bag.MoneyBag.Collect.RollOffMinDistance = 19.8
 						elseif amount >= 1 or amount <= 0 then
 							Money_Bag:ScaleTo(1.08)
-							Money_Bag.MoneyBag.BillboardGui.Size = UDim2.new(1.08, 0, 0.405, 0)
-							Money_Bag.MoneyBag.BillboardGui.MaxDistance = 27
-							Money_Bag.MoneyBag.CollectPrompt.MaxActivationDistance = 10.8
-							Money_Bag.MoneyBag.Collect.RollOffMaxDistance = 10800
-							Money_Bag.MoneyBag.Collect.RollOffMinDistance = 10.8
 						end
 
 						Money_Bag.Parent = workspace.RuntimeItems
@@ -380,36 +366,16 @@ end)
 _G.KiwiAPI = KiwiAPI
 
 KiwiAPI.Print("ℹ️  KiwiAPI --> " .. Ver .. (Ver == LatestVersion and " (latest)" or " (outdated)"), print)
+KiwiAPI.Print("ℹ️  KiwiAPI --> " .. Upd, print)
 
 if Ver ~= LatestVersion then
 	KiwiAPI.Print("", print)
 	KiwiAPI.Print("ℹ️  KiwiAPI --> latest version: " .. LatestVersion, warn)
 end
 
--- 🤫
-task.spawn(function()
-	game:GetService("UserInputService").InputBegan:Connect(function(input, gP)
-		if gP then return end
-		
-		if input.KeyCode == Enum.KeyCode.LeftBracket then
-			local hrp = Character.HumanoidRootPart
-			local positionInFront = hrp.Position + (hrp.CFrame.LookVector * 7)
-			
-			local Shush: Model = game:GetObjects("rbxassetid://110648395640271")[1]
-			Shush.ObjectInfo.Enabled = false
-			Shush:AddTag("DraggableObject")
-			Shush:AddTag("Sellable")
-			Shush:PivotTo(CFrame.new(positionInFront))
-			Shush.Parent = workspace.RuntimeItems
-
-			_G.KiwiAPI.MakeSellable(Shush, 69420)
-		end
-	end)
-end)
-
 -- Interact System
 task.spawn(function()
-	task.wait(10)
+	task.wait(5)
 	
 	local v2 = require(ReplicatedStorage.Shared.Remotes)
 	local l_LocalPlayer_0 = Players.LocalPlayer
@@ -699,25 +665,33 @@ task.spawn(function()
 			return Enum.ContextActionResult.Pass
 		else
 			if v10 then
-				if v10:HasTag("KiwiPickable") then
+				if v10:HasTag("KiwiPickable") and v10:IsA("Model") then
 					local RandomNum = math.random(1, 100000000)
-
+					local Clone: Model = v10:Clone()
+					
+					Clone:ScaleTo(v10:GetAttribute("Size"))
+					
+					v10.Name = v10:GetAttribute("Name") .. RandomNum
+					v10.Parent = ReplicatedStorage
+					v10:SetAttribute("OGName", v10.Name)
+					
 					local Tool = Instance.new("Tool", l_LocalPlayer_0.Backpack)
 					Tool.Name = v10:GetAttribute("Name")
 					Tool.CanBeDropped = false
 					Tool:AddTag("Droppable")
-					Tool:AddTag("KiwiPickable")
 					Tool:SetAttribute("Random", RandomNum)
 
-					local Handle = v10.PrimaryPart:Clone()
+					local Handle: BasePart = Clone.PrimaryPart
 					Handle.Name = "Handle"
-					Handle.Size *= v10:GetAttribute("Size")
 					Handle.Parent = Tool
-
-					v10.Parent = ReplicatedStorage
-					v10:SetAttribute("OGName", v10.Name)
-
-					v10.Name = v10:GetAttribute("Name") .. RandomNum
+					
+					for _, part: Object in Clone:GetChildren() do
+						if part:IsA("Model") or part:IsA("BasePart") then
+							part.Parent = Handle
+						end
+					end
+					
+					Clone:Destroy()
 
 					return
 				end
@@ -732,7 +706,7 @@ task.spawn(function()
 		else
 			local v20 = getCurrentlyHeldTool(l_LocalPlayer_0.Character)
 			if v20 then
-				if v20:HasTag("KiwiPickable") then
+				if v20:HasTag("Droppable") then
 					local RandomAttribute = v20:GetAttribute("Random")
 
 					if RandomAttribute then
@@ -745,13 +719,14 @@ task.spawn(function()
 							Model.Parent = workspace.RuntimeItems
 							Model.PrimaryPart.CFrame = CFrame.new(spawnPosition)
 						end
+						
+						v20:Destroy()
+					else
+						l_DropTool_0:FireServer(v20)
 					end
-
-					v20:Destroy()
 
 					return
 				end
-				l_DropTool_0:FireServer(v20)
 			end
 			return Enum.ContextActionResult.Sink
 		end
