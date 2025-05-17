@@ -1,6 +1,6 @@
 -- Version
-Ver = "v1.0.74"
-Upd = "Fixed something to do with money bags / Better pick up system :)"
+Ver = "v1.0.75"
+Upd = "Custom selling sound fix."
 
 -- Place Check
 if game.PlaceId ~= 70876832253163 then
@@ -11,6 +11,7 @@ end
 Players = game:GetService("Players")
 ReplicatedStorage = game:GetService("ReplicatedStorage")
 RunService = game:GetService("RunService")
+SoundService = game:GetService("SoundService")
 
 -- Stop Scripts
 ReplicatedStorage:WaitForChild("Client"):WaitForChild("Handlers"):WaitForChild("DraggableItemHandlers"):WaitForChild("ClientDraggableObjectHandler").Enabled = false
@@ -106,6 +107,7 @@ KiwiAPI.MakeSellable = function(object: Model, amount: number, noMoneyBag: boole
 	
 	local function HandleSell(part: BasePart)
 		if part and part:IsA("BasePart") then
+			part.CanTouch = true
 			part.Touched:Connect(function(hit: BasePart)
 				if hit and hit.Name == "SellZone" and object and object:IsDescendantOf(workspace) then
 					object.Parent = nil
@@ -114,7 +116,8 @@ KiwiAPI.MakeSellable = function(object: Model, amount: number, noMoneyBag: boole
 
 					if not noMoneyBag then
 						local Money = KiwiAPI.GetMoney()
-
+						local Collected = false
+						
 						local Money_Bag: Model = game:GetObjects(Money_Bag_ID)[1]
 
 						if amount >= 45 then
@@ -124,13 +127,17 @@ KiwiAPI.MakeSellable = function(object: Model, amount: number, noMoneyBag: boole
 						elseif amount >= 1 or amount <= 0 then
 							Money_Bag:ScaleTo(1.08)
 						end
-
+						
+						local SellSound: Sound = SoundService.Sell:Clone()
+						SellSound.Parent = Money_Bag
+						SellSound:Play()
+						
 						Money_Bag.Parent = workspace.RuntimeItems
 						Money_Bag.MoneyBag.CFrame = hit.CFrame * CFrame.Angles(0, math.rad(90), 0) + Vector3.new(0, 3, 0)
 						Money_Bag.MoneyBag.BillboardGui.TextLabel.Text = `${amount}`
 						Money_Bag.MoneyBag.CollectPrompt.Triggered:Connect(function()
-							if not Money_Bag:GetAttribute("Collected") then
-								Money_Bag:SetAttribute("Collected", true)
+							if not Collected then
+								Collected = true
 
 								Money_Bag.Parent = nil
 								Money_Bag.MoneyBag.Collect:Play()
