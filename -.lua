@@ -380,6 +380,53 @@ if Ver ~= LatestVersion then
 	KiwiAPI.Print("ℹ️  KiwiAPI --> latest version: " .. LatestVersion, warn)
 end
 
+task.spawn(function()
+	--@ emojis.lua - you can use the sack on any sellable object now.
+
+	local Spawn_Key = "M"
+	local Sell_Amount = 69420
+
+	local Size_Multiplier = 2
+	local Distance_In_Front = 7
+
+	local Emoji = "🚡"
+	local Top_Text = "Shhh"
+	local Bottom_Text = "Hehehehehe"
+
+	----
+
+	local UIS = game:GetService("UserInputService")
+	local Players = game:GetService("Players")
+	local LocalPlayer = Players.LocalPlayer
+	local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
+	local Main_Emoji_ID = "rbxassetid://114895268489221"
+
+	local Main_Emoji = game:GetObjects(Main_Emoji_ID)[1]
+	Main_Emoji:Destroy()
+
+	UIS.InputBegan:Connect(function(input: InputObject, gameProcessedEvent: boolean) 
+		if gameProcessedEvent then return end
+
+		if input.KeyCode == Enum.KeyCode[Spawn_Key] then
+			local hrp = Character.HumanoidRootPart
+			local positionInFront = hrp.Position + (hrp.CFrame.LookVector * Distance_In_Front)
+
+			local Main_Emoji: Model = game:GetObjects(Main_Emoji_ID)[1]
+			Main_Emoji:ScaleTo(Size_Multiplier)
+			Main_Emoji:PivotTo(CFrame.new(positionInFront))
+			Main_Emoji.Name = "Emoji"
+			Main_Emoji.PrimaryPart.BillboardGui.TextLabel.Text = Emoji
+			Main_Emoji.ObjectInfo.Title.Text = Top_Text
+			Main_Emoji.ObjectInfo.TextLabel.Text = Bottom_Text
+			Main_Emoji.Parent = workspace.RuntimeItems
+
+			_G.KiwiAPI.MakeSellable(Main_Emoji, Sell_Amount)
+			_G.KiwiAPI.MakePickable(Main_Emoji, 0.5) -- model, shrink multiplier.
+		end
+	end)
+end)
+
 -- Interact System
 task.spawn(function()
 	task.wait(5)
