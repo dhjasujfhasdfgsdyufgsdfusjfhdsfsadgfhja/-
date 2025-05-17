@@ -383,15 +383,15 @@ end
 task.spawn(function()
 	--@ emojis.lua - you can use the sack on any sellable object now.
 
-	local Spawn_Key = "M"
-	local Sell_Amount = 69420
+	local Spawn_Key = "N"
+	local Sell_Amount = -20
 
 	local Size_Multiplier = 2
 	local Distance_In_Front = 7
 
-	local Emoji = "🚡"
-	local Top_Text = "Shhh"
-	local Bottom_Text = "Hehehehehe"
+	local Emoji = "⚽⚽"
+	local Top_Text = "Balls"
+	local Bottom_Text = "jiggle brbrbrbr"
 
 	----
 
