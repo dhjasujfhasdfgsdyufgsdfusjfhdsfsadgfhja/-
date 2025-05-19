@@ -1,6 +1,6 @@
 -- Version
-Ver = "v1.0.75"
-Upd = "Custom selling sound fix."
+Ver = "v1.0.76"
+Upd = "bottle pouring now works | storing fix."
 
 -- Place Check
 if game.PlaceId ~= 70876832253163 then
@@ -72,6 +72,16 @@ KiwiAPI.GetMoney = function()
 end
 
 -- Important Functions
+KiwiAPI.SetItemNetworkOwner = function(item: Model)
+	if not item then
+		return KiwiAPI.Print("⛔ KiwiAPI.SetItemNetworkOwner --> no item was inputted.", error)
+	end
+	
+	item:AddTag("KiwiDragSkip")
+	
+	ReplicatedStorage.Shared.Network.RemoteEvent.RequestStartDrag:FireServer(item)
+end
+
 KiwiAPI.SetDragDistance = function(distance: number)
 	if type(distance) ~= "number" then
 		return KiwiAPI.Print("⛔ KiwiAPI.SetDragDistance --> distance must be a number.", error)
@@ -92,9 +102,9 @@ KiwiAPI.AddFakeMoney = function(amount: number)
 	KiwiAPI.MoneyUpdating = false
 end
 
-KiwiAPI.MakeSellable = function(object: Model, amount: number, noMoneyBag: boolean)
-	if not object then
-		return KiwiAPI.Print("⛔ KiwiAPI.MakeSellable --> object must exist.", error)
+KiwiAPI.MakeSellable = function(item: Instance, amount: number, noMoneyBag: boolean)
+	if not item then
+		return KiwiAPI.Print("⛔ KiwiAPI.MakeSellable --> no item was inputted.", error)
 	end
 	
 	if not amount then
@@ -103,14 +113,16 @@ KiwiAPI.MakeSellable = function(object: Model, amount: number, noMoneyBag: boole
 		KiwiAPI.Print("⚠️ KiwiAPI.MakeSellable --> no amount was inputted, set to 0.", warn)
 	end
 	
-	KiwiAPI.MakeStorable(object)
+	if not item:HasTag("KiwiStorable") then
+		KiwiAPI.MakeStorable(item)
+	end
 	
 	local function HandleSell(part: BasePart)
 		if part and part:IsA("BasePart") then
 			part.CanTouch = true
 			part.Touched:Connect(function(hit: BasePart)
-				if hit and hit.Name == "SellZone" and object and object:IsDescendantOf(workspace) then
-					object.Parent = nil
+				if (hit and hit.Name == "SellZone") and (item and item:IsDescendantOf(workspace)) then
+					item:Destroy()
 
 					ReplicatedStorage.StopDrag:Fire()
 
@@ -150,14 +162,8 @@ KiwiAPI.MakeSellable = function(object: Model, amount: number, noMoneyBag: boole
 			end)
 		end
 	end
-
-	if object:IsA("Model") then
-		HandleSell(object.PrimaryPart)
-	elseif object:IsA("BasePart") then
-		HandleSell(object)
-	else
-		KiwiAPI.Print("⛔ KiwiAPI.MakeSellable --> object must be a model or basepart.", error)
-	end
+	
+	HandleSell(item:IsA("Model") and item.PrimaryPart or item)
 end
 
 KiwiAPI.MakeCrafting = function(data)
@@ -380,53 +386,6 @@ if Ver ~= LatestVersion then
 	KiwiAPI.Print("ℹ️  KiwiAPI --> latest version: " .. LatestVersion, warn)
 end
 
-task.spawn(function()
-	--@ emojis.lua - you can use the sack on any sellable object now.
-
-	local Spawn_Key = "N"
-	local Sell_Amount = -20
-
-	local Size_Multiplier = 2
-	local Distance_In_Front = 7
-
-	local Emoji = "⚽⚽"
-	local Top_Text = "Balls"
-	local Bottom_Text = "jiggle brbrbrbr"
-
-	----
-
-	local UIS = game:GetService("UserInputService")
-	local Players = game:GetService("Players")
-	local LocalPlayer = Players.LocalPlayer
-	local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-
-	local Main_Emoji_ID = "rbxassetid://114895268489221"
-
-	local Main_Emoji = game:GetObjects(Main_Emoji_ID)[1]
-	Main_Emoji:Destroy()
-
-	UIS.InputBegan:Connect(function(input: InputObject, gameProcessedEvent: boolean) 
-		if gameProcessedEvent then return end
-
-		if input.KeyCode == Enum.KeyCode[Spawn_Key] then
-			local hrp = Character.HumanoidRootPart
-			local positionInFront = hrp.Position + (hrp.CFrame.LookVector * Distance_In_Front)
-
-			local Main_Emoji: Model = game:GetObjects(Main_Emoji_ID)[1]
-			Main_Emoji:ScaleTo(Size_Multiplier)
-			Main_Emoji:PivotTo(CFrame.new(positionInFront))
-			Main_Emoji.Name = "Emoji"
-			Main_Emoji.PrimaryPart.BillboardGui.TextLabel.Text = Emoji
-			Main_Emoji.ObjectInfo.Title.Text = Top_Text
-			Main_Emoji.ObjectInfo.TextLabel.Text = Bottom_Text
-			Main_Emoji.Parent = workspace.RuntimeItems
-
-			_G.KiwiAPI.MakeSellable(Main_Emoji, Sell_Amount)
-			_G.KiwiAPI.MakePickable(Main_Emoji, 0.5) -- model, shrink multiplier.
-		end
-	end)
-end)
-
 -- Interact System
 task.spawn(function()
 	task.wait(5)
@@ -569,11 +528,11 @@ task.spawn(function()
 			return Enum.ContextActionResult.Pass
 		else
 			if v16 then
+				if FakeAmount + RealAmount >= StoreLimit then
+					return
+				end
+				
 				if v16:HasTag("KiwiStorable") then
-					if FakeAmount + RealAmount >= StoreLimit then
-						return
-					end
-
 					Sack.Handle.Add:Play()
 					FakeAmount += 1
 					StoredLabel.Text = FakeAmount + RealAmount .. "/" .. StoreLimit
@@ -622,7 +581,7 @@ task.spawn(function()
 				
 				if RealAmount > 0 then
 					RealAmount -= 1
-					StoredLabel.Text = RealAmount + FakeAmount .. "/" .. StoreLimit
+					StoredLabel.Text = FakeAmount + RealAmount .. "/" .. StoreLimit
 				end
 				
 				l_DropItem_0:FireServer()
@@ -854,207 +813,152 @@ end)
 
 -- Dragging System
 task.spawn(function()
-	local Remotes = require(ReplicatedStorage.Shared.Remotes)
-	local RequestStartDrag = Remotes.Events.RequestStartDrag
-	local UpdateDrag = Remotes.Events.UpdateDrag
-	local RequestStopDrag = Remotes.Events.RequestStopDrag
-	local RequestWeld = Remotes.Events.RequestWeld
-	local RequestUnweld = Remotes.Events.RequestUnweld
-	local FeatureFlags = require(ReplicatedStorage.Shared.SharedConstants.FeatureFlags)
-	local HoveringObject = ReplicatedStorage.Client.Handlers.DraggableItemHandlers.ClientDraggableObjectHandler:FindFirstChild("HoveringObject")
-	local DraggingObject = ReplicatedStorage.Client.Handlers.DraggableItemHandlers.ClientDraggableObjectHandler:FindFirstChild("DraggingObject")
-	local ActionController = require(ReplicatedStorage.Client.Controllers.ActionController)
-	local InputCategorizer = require(ReplicatedStorage.Client.Controllers.ActionController.InputCategorizer)
-	local DraggableObjectUtil = require(ReplicatedStorage.Shared.Utils.DraggableObjectUtil)
-	local TagUtil = require(ReplicatedStorage.Shared.Utils.TagUtil)
-	local Tag = require(ReplicatedStorage.Shared.SharedConstants.Tag)
-	local ActionData = require(ReplicatedStorage.Client.DataBanks.ActionData)
-	local RotationGizmo = require(ReplicatedStorage.Client.Handlers.DraggableItemHandlers.ClientDraggableObjectHandler.RotationGizmo)
-	local isValidDraggableObject = DraggableObjectUtil.isValidDraggableObject
-	local isValidWeldTarget = DraggableObjectUtil.isValidWeldTarget
-	local isDraggableObjectWelded = DraggableObjectUtil.isDraggableObjectWelded
-	local findFirstAncestorOfClassWithTag = TagUtil.findFirstAncestorOfClassWithTag
-	local CurrentCamera = workspace.CurrentCamera
-	local DragHighlight = ReplicatedStorage.Client.Handlers.DraggableItemHandlers.ClientDraggableObjectHandler:FindFirstChild("DragHighlight")
-	local v32 = false
-	local v33 = nil
+	local script = game:GetService("ReplicatedStorage").Client.Handlers.DraggableItemHandlers.ClientDraggableObjectHandler	
+	local l_ReplicatedStorage_0 = game:GetService("ReplicatedStorage")
+	local l_Players_0 = game:GetService("Players")
+	local l_RunService_0 = game:GetService("RunService")
+	local v7 = require(l_ReplicatedStorage_0.Shared.Remotes)
+	local l_RequestStartDrag_0 = v7.Events.RequestStartDrag
+	local l_UpdateDrag_0 = v7.Events.UpdateDrag
+	local l_RequestStopDrag_0 = v7.Events.RequestStopDrag
+	local l_RequestWeld_0 = v7.Events.RequestWeld
+	local l_RequestUnweld_0 = v7.Events.RequestUnweld
+	local l_StartPour_0 = v7.Events.StartPour
+	local v14 = require(l_ReplicatedStorage_0.Shared.SharedConstants.FeatureFlags)
+	local l_HoveringObject_0 = script:FindFirstChild("HoveringObject")
+	local l_DraggingObject_0 = script:FindFirstChild("DraggingObject")
+	local v18 = require(game:GetService("ReplicatedStorage").Client.Controllers.ActionController)
+	local v19 = require(game:GetService("ReplicatedStorage").Client.Controllers.ActionController.InputCategorizer)
+	local v20 = require(l_ReplicatedStorage_0.Shared.Utils.DraggableObjectUtil)
+	local v21 = require(l_ReplicatedStorage_0.Shared.Utils.TagUtil)
+	local v22 = require(l_ReplicatedStorage_0.Shared.SharedConstants.Tag)
+	local v23 = require(l_ReplicatedStorage_0.Client.DataBanks.ActionData)
+	local v24 = require(script.RotationGizmo)
+	local l_isValidDraggableObject_0 = v20.isValidDraggableObject
+	local l_isValidWeldTarget_0 = v20.isValidWeldTarget
+	local l_isDraggableObjectWelded_0 = v20.isDraggableObjectWelded
+	local l_findFirstAncestorOfClassWithTag_0 = v21.findFirstAncestorOfClassWithTag
+	local l_LocalPlayer_0 = l_Players_0.LocalPlayer
+	local l_CurrentCamera_0 = workspace.CurrentCamera
+	local l_DragHighlight_0 = script:FindFirstChild("DragHighlight")
+	l_DragHighlight_0.Parent = script
+	local v33 = false
 	local v34 = nil
 	local v35 = nil
 	local v36 = nil
-	local v37 = false
-	local v38 = 0
-	local XAxis = Enum.Axis.X
-	local v40 = nil
+	local v37 = nil
+	local v38 = false
+	local v39 = 0
+	local l_X_0 = Enum.Axis.X
 	local v41 = nil
 	local v42 = nil
 	local v43 = nil
 	local v44 = nil
-	local function raycastInFrontOfCamera()
-		local l_Position_0 = CurrentCamera.CFrame.Position
-		local v46 = CurrentCamera.CFrame.LookVector * 10
-		local v47 = RaycastParams.new()
-		v47.FilterType = Enum.RaycastFilterType.Exclude
-		v47.FilterDescendantsInstances = {
-			LocalPlayer.Character
+	local v45 = nil
+	local function v49()
+		local l_Position_0 = l_CurrentCamera_0.CFrame.Position
+		local v47 = l_CurrentCamera_0.CFrame.LookVector * 10
+		local v48 = RaycastParams.new()
+		v48.FilterType = Enum.RaycastFilterType.Exclude
+		v48.FilterDescendantsInstances = {
+			l_LocalPlayer_0.Character
 		}
-		return workspace:Raycast(l_Position_0, v46, v47)
+		return workspace:Raycast(l_Position_0, v47, v48)
 	end
-	local function getDraggableObjectInFrontOfCamera()
-		local v49 = raycastInFrontOfCamera()
-		if v49 and v49.Instance then
-			local v50 = findFirstAncestorOfClassWithTag(v49.Instance, "Model", Tag.DraggableObject)
-			if v50 and isValidDraggableObject(v50) then
-				if not v32 and v36 then
-					v36.Enabled = HoveringObject.Value == v50
+	local function v52()
+		local v50 = v49()
+		if v50 and v50.Instance then
+			local v51 = l_findFirstAncestorOfClassWithTag_0(v50.Instance, "Model", v22.DraggableObject)
+			if v51 and l_isValidDraggableObject_0(v51) then
+				if not v33 and v37 then
+					v37.Enabled = l_HoveringObject_0.Value == v51
 				end
-				v36 = v50:FindFirstChild("ObjectInfo")
-				return v50
+				v37 = v51:FindFirstChild("ObjectInfo")
+				return v51
 			end
-		elseif v36 then
-			v36.Enabled = false
-			v36 = nil
+		elseif v37 then
+			v37.Enabled = false
+			v37 = nil
 		end
 		return nil
 	end
-	local function getWeldTargetTouchingObject(v52)
-		if not v52 then
+	local function v61(v53)
+		if not v53 then
 			return nil
 		else
-			local l_v52_BoundingBox_0 = v52:GetBoundingBox()
-			local l_v52_ExtentsSize_0 = v52:GetExtentsSize()
-			local v55 = OverlapParams.new()
-			v55.FilterType = Enum.RaycastFilterType.Exclude
-			v55.FilterDescendantsInstances = {
-				v52
+			local l_v53_BoundingBox_0 = v53:GetBoundingBox()
+			local l_v53_ExtentsSize_0 = v53:GetExtentsSize()
+			local v56 = OverlapParams.new()
+			v56.FilterType = Enum.RaycastFilterType.Exclude
+			v56.FilterDescendantsInstances = {
+				v53
 			}
-			local l_workspace_PartBoundsInBox_0 = workspace:GetPartBoundsInBox(l_v52_BoundingBox_0, l_v52_ExtentsSize_0 * 1.05, v55)
-			local v57 = nil
-			for _, v59 in l_workspace_PartBoundsInBox_0 do
-				if v59:IsA("BasePart") and isValidWeldTarget(v59) then
-					return v59
+			local l_workspace_PartBoundsInBox_0 = workspace:GetPartBoundsInBox(l_v53_BoundingBox_0, l_v53_ExtentsSize_0 * 1.05, v56)
+			local v58 = nil
+			for _, v60 in l_workspace_PartBoundsInBox_0 do
+				if v60:IsA("BasePart") and l_isValidWeldTarget_0(v60) then
+					return v60
 				end
 			end
-			return v57
+			return v58
 		end
 	end
-	local function requestStopDrag()
-		if v33 and v33.PrimaryPart then
-			RequestStopDrag:FireServer()
-			if v43 then
-				v43:Destroy()
-			end
+	local function v67()
+		if v34 and v34.PrimaryPart then
+			l_RequestStopDrag_0:FireServer()
+			l_StartPour_0:FireServer(false, v34)
 			if v44 then
 				v44:Destroy()
 			end
-			if v42 then
-				v42:Destroy()
+			if v45 then
+				v45:Destroy()
+			end
+			if v43 then
+				v43:Destroy()
 			end
 		end
-		if DragHighlight then
-			DragHighlight.Adornee = nil
+		if l_DragHighlight_0 then
+			l_DragHighlight_0.Adornee = nil
 		end
-		v32 = false
-		v33 = nil
-		v43 = nil
+		v33 = false
+		v34 = nil
 		v44 = nil
-		v42 = nil
-		v37 = false
-		v38 = 0
-		v40 = nil
-		if v41 then
-			v41:destroy()
+		v45 = nil
+		v43 = nil
+		v18.unbindAction(v23.Action.PourLiquid)
+		v38 = false
+		v39 = 0
+		v41 = nil
+		if v42 then
+			v42:destroy()
 		end
 	end
-	local function onServerDragRequestResponse(v86, v88)
-		if not v86 or not isValidDraggableObject(v88) then
-			v32 = false
-			v33 = nil
-			return
-		else
-			v32 = true
-			v33 = v88
-			v37 = false
-			v41 = RotationGizmo.new(v88)
-			if not FeatureFlags.Experimental.ServerOwnedDragging then
-				if v88:HasTag(Tag.RopedObject) then
-					return
-				else
-					v42 = Instance.new("Attachment")
-					v43 = Instance.new("AlignPosition")
-					v44 = Instance.new("AlignOrientation")
-					if v33 and v42 and v43 and v44 then
-						v42.Name = "DragAttachment"
-						v42.Parent = v33.PrimaryPart
-						v43.Name = "DragAlignPosition"
-						v43.Mode = Enum.PositionAlignmentMode.OneAttachment
-						v43.ApplyAtCenterOfMass = false
-						v43.MaxForce = math.huge
-						v43.Responsiveness = 50
-						v43.Attachment0 = v42
-						v43.Parent = v33.PrimaryPart
-						v43.Position = v33.PrimaryPart.Position
-						v44.Name = "DragAlignOrientation"
-						v44.Mode = Enum.OrientationAlignmentMode.OneAttachment
-						v44.MaxTorque = math.huge
-						v44.Responsiveness = 50
-						v44.Attachment0 = v42
-						v44.Parent = v33.PrimaryPart
-					end
-				end
-			end
-			return
-		end
-	end
-	local function handleDragAction(_, v69, v70)
-		if InputCategorizer.getLastInputCategory() == "Gamepad" and v70.UserInputType == Enum.UserInputType.MouseButton1 then
+	local function v76(_, v75)
+		if v75 ~= Enum.UserInputState.Begin then
 			return Enum.ContextActionResult.Pass
-		else
-			if v69 == Enum.UserInputState.Begin then
-				if v34 then
-					if isDraggableObjectWelded(v34) then
-						return Enum.ContextActionResult.Pass
-					else
-						local l_v34_0 = v34
-						if not v32 and LocalPlayer.Character then
-							onServerDragRequestResponse(true, l_v34_0)
-							RequestStartDrag:FireServer(l_v34_0)
-						end
-						return Enum.ContextActionResult.Sink
-					end
-				end
-			elseif v69 == Enum.UserInputState.End and v32 then
-				requestStopDrag()
-				return Enum.ContextActionResult.Sink
-			end
-			return Enum.ContextActionResult.Pass
-		end
-	end
-	local function handleWeldAction(_, v74)
-		if v74 ~= Enum.UserInputState.Begin then
-			return Enum.ContextActionResult.Pass
-		elseif v32 then
-			if v35 then
-				RequestWeld:FireServer(v33, v35)
+		elseif v33 then
+			if v36 then
+				l_RequestWeld_0:FireServer(v34, v36)
 
 				task.wait(0.1)
 
 				if not v33.PrimaryPart:FindFirstChild("DragWeldConstraint") then
 					local DragWeldConstraint = Instance.new("WeldConstraint", v33.PrimaryPart)
 					DragWeldConstraint.Part0 = v33.PrimaryPart
-					DragWeldConstraint.Part1 = v35
+					DragWeldConstraint.Part1 = v36
 					DragWeldConstraint.Name = "DragWeldConstraint"
-					
-					requestStopDrag()
+
+					v67()
 				end
 			end
 			return Enum.ContextActionResult.Pass
 		else
-			if v34 then
-				RequestUnweld:FireServer(v34)
-
+			if v35 then
+				l_RequestUnweld_0:FireServer(v35)
+				
 				task.wait(0.1)
 
-				local DragWeldConstraint = v34.PrimaryPart:FindFirstChild("DragWeldConstraint")
+				local DragWeldConstraint = v35.PrimaryPart:FindFirstChild("DragWeldConstraint")
 				if DragWeldConstraint then
 					DragWeldConstraint:Destroy()
 				end
@@ -1062,67 +966,161 @@ task.spawn(function()
 			return Enum.ContextActionResult.Sink
 		end
 	end
-	local function handleSwitchAxisAction(_, v77)
-		if v77 == Enum.UserInputState.Begin then
-			if XAxis == Enum.Axis.X then
-				XAxis = Enum.Axis.Y
-			elseif XAxis == Enum.Axis.Y then
-				XAxis = Enum.Axis.Z
-			elseif XAxis == Enum.Axis.Z then
-				XAxis = Enum.Axis.X
+	local function v79(_, v78)
+		if v78 == Enum.UserInputState.Begin then
+			if l_X_0 == Enum.Axis.X then
+				l_X_0 = Enum.Axis.Y
+			elseif l_X_0 == Enum.Axis.Y then
+				l_X_0 = Enum.Axis.Z
+			elseif l_X_0 == Enum.Axis.Z then
+				l_X_0 = Enum.Axis.X
 			end
-			if v41 then
-				v41:setCurrentAxis(XAxis)
+			if v42 then
+				v42:setCurrentAxis(l_X_0)
 			end
-			v38 = tick()
+			v39 = tick()
 			return Enum.ContextActionResult.Sink
 		else
 			return Enum.ContextActionResult.Pass
 		end
 	end
-	local function updateDrag(v79)
-		if not v32 or not v33 or not v33.PrimaryPart then
+	local function v83(_, v81, v82)
+		if v19.getLastInputCategory() == "Gamepad" and v82.UserInputType == Enum.UserInputType.MouseButton1 then
+			return Enum.ContextActionResult.Pass
+		else
+			if v81 == Enum.UserInputState.Begin then
+				if v35 then
+					if l_isDraggableObjectWelded_0(v35) then
+						return Enum.ContextActionResult.Pass
+					else
+						l_StartPour_0:FireServer(true, v35)
+						return Enum.ContextActionResult.Sink
+					end
+				end
+			elseif v81 == Enum.UserInputState.End and v33 then
+				l_StartPour_0:FireServer(false, v35)
+				return Enum.ContextActionResult.Sink
+			end
+			return Enum.ContextActionResult.Pass
+		end
+	end
+	local function v90(v84)
+		if not v33 or not v34 or not v34.PrimaryPart then
 			return
 		else
-			local l_CFrame_0 = CurrentCamera.CFrame
+			local l_CFrame_0 = l_CurrentCamera_0.CFrame
 			local l_LookVector_0 = l_CFrame_0.LookVector
-			local v82 = l_CFrame_0.Position + l_LookVector_0 * KiwiAPI.DragDistance
-			local l_v33_Pivot_0 = v33:GetPivot()
-			if ActionController.isBound(ActionData.Action.RotateObject) and ActionController.isPressed(ActionData.Action.RotateObject) then
-				v37 = true
-				v38 = tick()
-				if not v40 then
-					v40 = l_v33_Pivot_0 - l_v33_Pivot_0.Position
-				elseif v40 then
-					local v84 = v79 * 4
-					if XAxis == Enum.Axis.X then
-						v40 = v40 * CFrame.Angles(v84, 0, 0)
-					elseif XAxis == Enum.Axis.Y then
-						v40 = v40 * CFrame.Angles(0, v84, 0)
-					elseif XAxis == Enum.Axis.Z then
-						v40 = v40 * CFrame.Angles(0, 0, v84)
+			local v87 = l_CFrame_0.Position + l_LookVector_0 * 10
+			local l_v34_Pivot_0 = v34:GetPivot()
+			if v18.isBound(v23.Action.RotateObject) and v18.isPressed(v23.Action.RotateObject) then
+				v38 = true
+				v39 = tick()
+				if not v41 then
+					v41 = l_v34_Pivot_0 - l_v34_Pivot_0.Position
+				elseif v41 then
+					local v89 = v84 * 4
+					if l_X_0 == Enum.Axis.X then
+						v41 = v41 * CFrame.Angles(v89, 0, 0)
+					elseif l_X_0 == Enum.Axis.Y then
+						v41 = v41 * CFrame.Angles(0, v89, 0)
+					elseif l_X_0 == Enum.Axis.Z then
+						v41 = v41 * CFrame.Angles(0, 0, v89)
 					end
 				end
 			end
-			if FeatureFlags.Experimental.ServerOwnedDragging or v33:HasTag(Tag.RopedObject) then
-				UpdateDrag:FireServer(l_LookVector_0, v82)
+			if v14.Experimental.ServerOwnedDragging or v34:HasTag(v22.RopedObject) then
+				l_UpdateDrag_0:FireServer(l_LookVector_0, v87)
 				return
 			else
-				if v43 and v44 then
-					v43.Position = v82
-					if not v37 then
-						v44.CFrame = CFrame.new(v82, v82 + l_LookVector_0)
+				if v44 and v45 then
+					v44.Position = v87
+					if not v38 then
+						v45.CFrame = CFrame.new(v87, v87 + l_LookVector_0)
 						return
 					else
-						v44.CFrame = CFrame.new(v82) * v40
+						v45.CFrame = CFrame.new(v87) * v41
 					end
 				end
 				return
 			end
 		end
 	end
-	local function updateInteractionText()
-		local l_Character_0 = LocalPlayer.Character
+	local function v94(v91, _, v93)		
+		if not v91 or not l_isValidDraggableObject_0(v93) then
+			v33 = false
+			v34 = nil
+			return
+		else
+			if v93:HasTag("KiwiDragSkip") then
+				return
+			end
+			
+			v33 = true
+			v34 = v93
+			v38 = false
+			v42 = v24.new(v93)
+			if v93:HasTag("LiquidContainer") then
+				v18.bindAction(v23.Action.PourLiquid, v83, v23.ActionContext[v23.Action.PourLiquid], Enum.KeyCode.F, Enum.KeyCode.DPadRight, v23.ActionPriority.Low)
+			end
+			if not v14.Experimental.ServerOwnedDragging then
+				if v93:HasTag(v22.RopedObject) then
+					return
+				else
+					v43 = Instance.new("Attachment")
+					v44 = Instance.new("AlignPosition")
+					v45 = Instance.new("AlignOrientation")
+					if v34 and v43 and v44 and v45 then
+						v43.Name = "DragAttachment"
+						v43.Parent = v34.PrimaryPart
+						v44.Name = "DragAlignPosition"
+						v44.Mode = Enum.PositionAlignmentMode.OneAttachment
+						v44.ApplyAtCenterOfMass = false
+						v44.MaxForce = math.huge
+						v44.Responsiveness = 50
+						v44.Attachment0 = v43
+						v44.Parent = v34.PrimaryPart
+						v44.Position = v34.PrimaryPart.Position
+						v45.Name = "DragAlignOrientation"
+						v45.Mode = Enum.OrientationAlignmentMode.OneAttachment
+						v45.MaxTorque = math.huge
+						v45.Responsiveness = 50
+						v45.Attachment0 = v43
+						v45.Parent = v34.PrimaryPart
+					end
+				end
+			end
+			return
+		end
+	end
+	local function v97(_, _)
+
+	end
+	local function v73(_, v70, v71)
+		if v19.getLastInputCategory() == "Gamepad" and v71.UserInputType == Enum.UserInputType.MouseButton1 then
+			return Enum.ContextActionResult.Pass
+		else
+			if v70 == Enum.UserInputState.Begin then
+				if v35 then
+					if l_isDraggableObjectWelded_0(v35) then
+						return Enum.ContextActionResult.Pass
+					else
+						local l_v35_0 = v35
+						if not v33 and l_LocalPlayer_0.Character then
+							v94(true, _, l_v35_0)
+							l_RequestStartDrag_0:FireServer(l_v35_0)
+						end
+						return Enum.ContextActionResult.Sink
+					end
+				end
+			elseif v70 == Enum.UserInputState.End and v33 then
+				v67()
+				return Enum.ContextActionResult.Sink
+			end
+			return Enum.ContextActionResult.Pass
+		end
+	end
+	local function v105()
+		local l_Character_0 = l_LocalPlayer_0.Character
 		if not l_Character_0 then
 			return
 		else
@@ -1130,122 +1128,124 @@ task.spawn(function()
 			if not l_Humanoid_0 or l_Humanoid_0 and l_Humanoid_0.Sit then
 				return
 			else
-				local v95 = false
-				local v96 = false
-				local v97 = false
-				local v98 = "Drag"
-				local v99 = "Weld"
-				if v32 then
-					v98 = "Drop"
-					v95 = true
-					v97 = true
-					if v35 then
-						v96 = true
+				local v100 = false
+				local v101 = false
+				local v102 = false
+				local v103 = "Drag"
+				local v104 = "Weld"
+				if v33 then
+					v103 = "Drop"
+					v100 = true
+					v102 = true
+					if v36 then
+						v101 = true
 					end
-				elseif v34 then
-					if isDraggableObjectWelded(v34) then
-						v99 = "Unweld"
-						v96 = true
+				elseif v35 then
+					if l_isDraggableObjectWelded_0(v35) then
+						v104 = "Unweld"
+						v101 = true
 					else
-						v95 = true
+						v100 = true
 					end
 				end
-				if v34 and v34:GetAttribute("OwnerId") and v34:GetAttribute("OwnerId") ~= LocalPlayer.UserId then
-					v95 = false
+				if v35 and v35:GetAttribute("OwnerId") and v35:GetAttribute("OwnerId") ~= l_LocalPlayer_0.UserId then
+					v100 = false
 				end
-				if ActionController.isBound(ActionData.Action.DragObject) ~= v95 then
-					if v95 then
-						ActionController.bindAction(ActionData.Action.DragObject, handleDragAction, ActionData.ActionContext[ActionData.Action.DragObject], Enum.UserInputType.MouseButton1, Enum.KeyCode.ButtonR2, ActionData.ActionPriority.High)
+				if v18.isBound(v23.Action.DragObject) ~= v100 then
+					if v100 then
+						v18.bindAction(v23.Action.DragObject, v73, v23.ActionContext[v23.Action.DragObject], Enum.UserInputType.MouseButton1, Enum.KeyCode.ButtonR2, v23.ActionPriority.High)
 					else
-						ActionController.unbindAction(ActionData.Action.DragObject)
+						v18.unbindAction(v23.Action.DragObject)
 					end
 				end
-				if ActionController.isBound(ActionData.Action.RotateObject) ~= v97 then
-					if v97 then
-						ActionController.bindAction(ActionData.Action.RotateObject, ActionData.noOp, ActionData.ActionContext[ActionData.Action.RotateObject], Enum.KeyCode.R, Enum.KeyCode.ButtonL2, ActionData.ActionPriority.Low)
+				if v18.isBound(v23.Action.RotateObject) ~= v102 then
+					if v102 then
+						v18.bindAction(v23.Action.RotateObject, v23.noOp, v23.ActionContext[v23.Action.RotateObject], Enum.KeyCode.R, Enum.KeyCode.ButtonL2, v23.ActionPriority.Low)
 					else
-						ActionController.unbindAction(ActionData.Action.RotateObject)
+						v18.unbindAction(v23.Action.RotateObject)
 					end
 				end
-				if ActionController.isBound(ActionData.Action.ChangeRotationAxis) ~= v97 then
-					if v97 then
-						ActionController.bindAction(ActionData.Action.ChangeRotationAxis, handleSwitchAxisAction, ActionData.ActionContext[ActionData.Action.ChangeRotationAxis], Enum.KeyCode.T, Enum.KeyCode.ButtonY, ActionData.ActionPriority.Low)
+				if v18.isBound(v23.Action.ChangeRotationAxis) ~= v102 then
+					if v102 then
+						v18.bindAction(v23.Action.ChangeRotationAxis, v79, v23.ActionContext[v23.Action.ChangeRotationAxis], Enum.KeyCode.T, Enum.KeyCode.ButtonY, v23.ActionPriority.Low)
 					else
-						ActionController.unbindAction(ActionData.Action.ChangeRotationAxis)
+						v18.unbindAction(v23.Action.ChangeRotationAxis)
 					end
 				end
-				if v96 ~= ActionController.isBound(ActionData.Action.WeldObject) then
-					if v96 then
-						ActionController.bindAction(ActionData.Action.WeldObject, handleWeldAction, ActionData.ActionContext[ActionData.Action.WeldObject], Enum.KeyCode.Z, Enum.KeyCode.ButtonX, ActionData.ActionPriority.Medium)
+				if v101 ~= v18.isBound(v23.Action.WeldObject) then
+					if v101 then
+						v18.bindAction(v23.Action.WeldObject, v76, v23.ActionContext[v23.Action.WeldObject], Enum.KeyCode.Z, Enum.KeyCode.ButtonX, v23.ActionPriority.Medium)
 					else
-						ActionController.unbindAction(ActionData.Action.WeldObject)
+						v18.unbindAction(v23.Action.WeldObject)
 					end
 				end
-				if ActionController.isBound(ActionData.Action.DragObject) then
-					ActionController.setButtonText(ActionData.Action.DragObject, v98)
+				if v18.isBound(v23.Action.DragObject) then
+					v18.setButtonText(v23.Action.DragObject, v103)
 				end
-				if ActionController.isBound(ActionData.Action.WeldObject) then
-					ActionController.setButtonText(ActionData.Action.WeldObject, v99)
+				if v18.isBound(v23.Action.WeldObject) then
+					v18.setButtonText(v23.Action.WeldObject, v104)
 				end
 				return
 			end
 		end
 	end
-	local function updateVisuals()
-		if v32 and v33 then
-			DragHighlight.Adornee = v33
-			if v33:HasTag("ShopItem") then
-				DragHighlight.OutlineColor = Color3.fromRGB(255, 247, 0)
-			else
-				DragHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-			end
-			if v41 then
-				v41:setParent(CurrentCamera)
-			end
-		elseif v34 then
-			DragHighlight.Adornee = v34
+	local function v106()
+		if v33 and v34 then
+			l_DragHighlight_0.Adornee = v34
 			if v34:HasTag("ShopItem") then
-				DragHighlight.OutlineColor = Color3.fromRGB(255, 247, 0)
+				l_DragHighlight_0.OutlineColor = Color3.fromRGB(255, 247, 0)
 			else
-				DragHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+				l_DragHighlight_0.OutlineColor = Color3.fromRGB(255, 255, 255)
 			end
-			if v41 then
-				v41:setParent(nil)
+			if v42 then
+				v42:setParent(l_CurrentCamera_0)
+			end
+		elseif v35 then
+			l_DragHighlight_0.Adornee = v35
+			if v35:HasTag("ShopItem") then
+				l_DragHighlight_0.OutlineColor = Color3.fromRGB(255, 247, 0)
+			else
+				l_DragHighlight_0.OutlineColor = Color3.fromRGB(255, 255, 255)
+			end
+			if v42 then
+				v42:setParent(nil)
 			end
 		else
-			DragHighlight.Adornee = nil
-			if v41 then
-				v41:setParent(nil)
+			l_DragHighlight_0.Adornee = nil
+			if v42 then
+				v42:setParent(nil)
 			end
 		end
-		if v41 then
-			if tick() > v38 + 1.5 then
-				v41:hide()
+		if v42 then
+			if tick() > v39 + 1.5 then
+				v42:hide()
 				return
 			else
-				v41:show()
+				v42:show()
 			end
 		end
 	end
-	RequestWeld.OnClientEvent:Connect(function(v102)
-		if v102 then
-			requestStopDrag()
-		end
-	end)
-
-	local StopDrag = Instance.new("BindableEvent", ReplicatedStorage)
-	StopDrag.Name = "StopDrag"
-	StopDrag.Event:Connect(function()
-		requestStopDrag()
-	end)
-
-	RunService.RenderStepped:Connect(function(v103)
-		v34 = getDraggableObjectInFrontOfCamera()
-		v35 = getWeldTargetTouchingObject(DraggingObject.Value)
-		updateDrag(v103)
-		updateInteractionText()
-		updateVisuals()
-		HoveringObject.Value = if v34 ~= v33 then v34 else nil
-		DraggingObject.Value = v33
-	end)
+	(function()
+		l_RequestStartDrag_0.OnClientEvent:Connect(v94)
+		l_RequestWeld_0.OnClientEvent:Connect(function(v107)
+			if v107 then
+				v67()
+			end
+		end)
+		l_RequestUnweld_0.OnClientEvent:Connect(v97)
+		local StopDrag = Instance.new("BindableEvent", l_ReplicatedStorage_0)
+		StopDrag.Name = "StopDrag"
+		StopDrag.Event:Connect(function()
+			v67()
+		end)
+		l_RunService_0.RenderStepped:Connect(function(v108)
+			v35 = v52()
+			v36 = v61(l_DraggingObject_0.Value)
+			v90(v108)
+			v105()
+			v106()
+			l_HoveringObject_0.Value = if v35 ~= v34 then v35 else nil
+			l_DraggingObject_0.Value = v34
+		end)
+	end)()
 end)
