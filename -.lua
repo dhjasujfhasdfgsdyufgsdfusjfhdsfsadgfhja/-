@@ -1,6 +1,6 @@
 -- Version
-Ver = "v1.0.76"
-Upd = "bottle pouring now works | storing fix."
+Ver = "v1.0.8"
+Upd = "tons of bug fixes."
 
 -- Place Check
 if game.PlaceId ~= 70876832253163 then
@@ -94,11 +94,13 @@ KiwiAPI.AddFakeMoney = function(amount: number)
 	if type(amount) ~= "number" then
 		return KiwiAPI.Print("⛔ KiwiAPI.AddFakeMoney --> amount must be a number.", error)
 	end
-
+	
+	local Money = KiwiAPI.GetMoney()
+	
 	KiwiAPI.MoneyUpdating = true
+	KiwiAPI.FakeMoney += amount
 	Money.Value += amount
 	task.wait(0.1)
-	KiwiAPI.FakeMoney += amount
 	KiwiAPI.MoneyUpdating = false
 end
 
@@ -367,7 +369,9 @@ Money:GetPropertyChangedSignal("Value"):Connect(function()
 	end
 
 	KiwiAPI.MoneyUpdating = true
-
+	
+	warn(KiwiAPI.FakeMoney)
+	
 	Money.Value += KiwiAPI.FakeMoney
 
 	task.wait(0.1)
@@ -382,7 +386,6 @@ KiwiAPI.Print("ℹ️  KiwiAPI --> " .. Ver .. (Ver == LatestVersion and " (late
 KiwiAPI.Print("ℹ️  KiwiAPI --> " .. Upd, print)
 
 if Ver ~= LatestVersion then
-	KiwiAPI.Print("", print)
 	KiwiAPI.Print("ℹ️  KiwiAPI --> latest version: " .. LatestVersion, warn)
 end
 
@@ -411,8 +414,6 @@ task.spawn(function()
 		else
 			if v19 then
 				if v19:HasTag("KiwiFunction") then
-					warn("has")
-
 					local Action = ItemFunctions[v19]
 					if Action then
 						Action()
@@ -942,7 +943,7 @@ task.spawn(function()
 
 				task.wait(0.1)
 
-				if not v34.PrimaryPart:FindFirstChild("DragWeldConstraint") then
+				if v34.PrimaryPart and not v34.PrimaryPart:FindFirstChild("DragWeldConstraint") then
 					local DragWeldConstraint = Instance.new("WeldConstraint", v34.PrimaryPart)
 					DragWeldConstraint.Part0 = v34.PrimaryPart
 					DragWeldConstraint.Part1 = v36
@@ -1106,7 +1107,7 @@ task.spawn(function()
 					else
 						local l_v35_0 = v35
 						if not v33 and l_LocalPlayer_0.Character then
-							v94(true, _, l_v35_0)
+							v94(true, nil, l_v35_0)
 							l_RequestStartDrag_0:FireServer(l_v35_0)
 						end
 						return Enum.ContextActionResult.Sink
@@ -1226,7 +1227,6 @@ task.spawn(function()
 		end
 	end
 	(function()
-		l_RequestStartDrag_0.OnClientEvent:Connect(v94)
 		l_RequestWeld_0.OnClientEvent:Connect(function(v107)
 			if v107 then
 				v67()
