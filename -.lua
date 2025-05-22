@@ -54,9 +54,9 @@ KiwiAPI.Print = function(text: string, printType)
 	if not text then
 		return KiwiAPI.Print("⛔ KiwiAPI.Print --> no text.", error)
 	end
-	
+
 	printType = printType or print
-	
+
 	printType(text, printType == error and 2 or "")
 end
 
@@ -67,7 +67,7 @@ KiwiAPI.GetMoney = function()
 	if leaderstats and Money then
 		return Money
 	end
-	
+
 	return KiwiAPI.Print("⛔ KiwiAPI.GetMoney --> failed grabbing leaderstats & money.", error)
 end
 
@@ -76,9 +76,9 @@ KiwiAPI.SetItemNetworkOwner = function(item: Model)
 	if not item then
 		return KiwiAPI.Print("⛔ KiwiAPI.SetItemNetworkOwner --> no item was inputted.", error)
 	end
-	
+
 	item:AddTag("KiwiDragSkip")
-	
+
 	ReplicatedStorage.Shared.Network.RemoteEvent.RequestStartDrag:FireServer(item)
 end
 
@@ -86,7 +86,7 @@ KiwiAPI.SetDragDistance = function(distance: number)
 	if type(distance) ~= "number" then
 		return KiwiAPI.Print("⛔ KiwiAPI.SetDragDistance --> distance must be a number.", error)
 	end
-	
+
 	KiwiAPI.DragDistance = distance
 end
 
@@ -94,7 +94,7 @@ KiwiAPI.AddFakeMoney = function(amount: number)
 	if type(amount) ~= "number" then
 		return KiwiAPI.Print("⛔ KiwiAPI.AddFakeMoney --> amount must be a number.", error)
 	end
-	
+
 	KiwiAPI.MoneyUpdating = true
 	Money.Value += amount
 	task.wait(0.1)
@@ -106,17 +106,17 @@ KiwiAPI.MakeSellable = function(item: Instance, amount: number, noMoneyBag: bool
 	if not item then
 		return KiwiAPI.Print("⛔ KiwiAPI.MakeSellable --> no item was inputted.", error)
 	end
-	
+
 	if not amount then
 		amount = 0
-		
+
 		KiwiAPI.Print("⚠️ KiwiAPI.MakeSellable --> no amount was inputted, set to 0.", warn)
 	end
-	
+
 	if not item:HasTag("KiwiStorable") then
 		KiwiAPI.MakeStorable(item)
 	end
-	
+
 	local function HandleSell(part: BasePart)
 		if part and part:IsA("BasePart") then
 			part.CanTouch = true
@@ -129,7 +129,7 @@ KiwiAPI.MakeSellable = function(item: Instance, amount: number, noMoneyBag: bool
 					if not noMoneyBag then
 						local Money = KiwiAPI.GetMoney()
 						local Collected = false
-						
+
 						local Money_Bag: Model = game:GetObjects(Money_Bag_ID)[1]
 
 						if amount >= 45 then
@@ -139,11 +139,11 @@ KiwiAPI.MakeSellable = function(item: Instance, amount: number, noMoneyBag: bool
 						elseif amount >= 1 or amount <= 0 then
 							Money_Bag:ScaleTo(1.08)
 						end
-						
+
 						local SellSound: Sound = SoundService.Sell:Clone()
 						SellSound.Parent = Money_Bag
 						SellSound:Play()
-						
+
 						Money_Bag.Parent = workspace.RuntimeItems
 						Money_Bag.MoneyBag.CFrame = hit.CFrame * CFrame.Angles(0, math.rad(90), 0) + Vector3.new(0, 3, 0)
 						Money_Bag.MoneyBag.BillboardGui.TextLabel.Text = `${amount}`
@@ -162,7 +162,7 @@ KiwiAPI.MakeSellable = function(item: Instance, amount: number, noMoneyBag: bool
 			end)
 		end
 	end
-	
+
 	HandleSell(item:IsA("Model") and item.PrimaryPart or item)
 end
 
@@ -196,9 +196,9 @@ KiwiAPI.MakeCrafting = function(data)
 			KiwiAPI.Print("⚠️ KiwiAPI.MakeCrafting --> property missing '" .. key .. "', replaced with '" .. tostring(value) .. "'.", warn)
 		end
 	end
-	
+
 	local HRP = Character:FindFirstChild("HumanoidRootPart")
-	
+
 	if Character and HRP then
 		local forward = HRP.CFrame.LookVector
 		local positionInFront = HRP.Position + (forward * data.distance)
@@ -303,10 +303,10 @@ KiwiAPI.MakeCrafting = function(data)
 				end
 			end
 		end
-		
+
 		return
 	end
-	
+
 	KiwiAPI.Print("⛔ KiwiAPI.MakeCrafting --> failed grabbing character and humanoidrootpart.", error)
 end
 
@@ -314,13 +314,13 @@ KiwiAPI.MakePickable = function(item: Model, shrink_multiplier: number)
 	if not item then
 		return KiwiAPI.Print("⛔ KiwiAPI.MakePickable --> no item was inputted.", error)
 	end
-	
+
 	if not shrink_multiplier then
 		shrink_multiplier = 1
-		
+
 		KiwiAPI.Print("⚠️ KiwiAPI.MakePickable --> no shrink_multiplier was inputted, set to 1.", warn)
 	end
-	
+
 	item:AddTag("KiwiPickable")
 	item:SetAttribute("Name", item.Name)
 	item:SetAttribute("Size", shrink_multiplier)
@@ -330,7 +330,7 @@ KiwiAPI.MakeDraggable = function(item: Model)
 	if not item then
 		return KiwiAPI.Print("⛔ KiwiAPI.MakeDraggable --> no item was inputted.", error)
 	end
-	
+
 	item:AddTag("DraggableObject")
 end
 
@@ -338,7 +338,7 @@ KiwiAPI.MakeStorable = function(item: Model)
 	if not item then
 		return KiwiAPI.Print("⛔ KiwiAPI.MakeStorable --> no item was inputted.", error)
 	end
-	
+
 	item:AddTag("KiwiStorable")
 end
 
@@ -346,15 +346,15 @@ KiwiAPI.MakePickupFunction = function(item: Model, action)
 	if not item then
 		return KiwiAPI.Print("⛔ KiwiAPI.MakePickupFunction --> no item was inputted.", error)
 	end
-	
+
 	if not action then
 		return KiwiAPI.Print("⛔ KiwiAPI.MakePickupFunction --> no action was inputted.", error)
 	end
-	
+
 	if ItemFunctions[item] then
 		KiwiAPI.Print("⚠️ KiwiAPI.MakePickupFunction --> item already has a current function, overriding.", error)
 	end
-	
+
 	item:AddTag("KiwiFunction")
 	ItemFunctions[item] = action
 end
@@ -389,7 +389,7 @@ end
 -- Interact System
 task.spawn(function()
 	task.wait(5)
-	
+
 	local v2 = require(ReplicatedStorage.Shared.Remotes)
 	local l_LocalPlayer_0 = Players.LocalPlayer
 	local l_Shared_0 = ReplicatedStorage.Shared
@@ -412,15 +412,15 @@ task.spawn(function()
 			if v19 then
 				if v19:HasTag("KiwiFunction") then
 					warn("has")
-					
+
 					local Action = ItemFunctions[v19]
 					if Action then
 						Action()
 					end
-					
+
 					return
 				end
-				
+
 				l_ActivateObject_0:InvokeServer(v19):andThen(function(v23, ...)
 					if v23 then
 						local v24 = v17[v19.Name]
@@ -500,10 +500,10 @@ task.spawn(function()
 	local l_isValidDraggableObject_0 = v13.isValidDraggableObject
 	local l_isDraggableObjectWelded_0 = v13.isDraggableObjectWelded
 	local v16 = nil
-	
+
 	local Sack = LocalPlayer.Backpack:WaitForChild("Sack", math.huge)
 	local StoreLimit = Sack.SackSettings.Limit.Value
-	
+
 	local BillboardGui = Sack.BillboardGui
 	local Clone = BillboardGui:Clone()
 	Clone.Parent = Sack
@@ -511,18 +511,18 @@ task.spawn(function()
 	task.delay(1, function()
 		BillboardGui:Destroy()
 	end)
-	
+
 	local StoredLabel = Clone.TextLabel
 	local FakeAmount = 0
 	local RealAmount = 0
-	
+
 	local playerFolder = ReplicatedStorage:FindFirstChild("SackTools")
 	if not playerFolder then
 		playerFolder = Instance.new("Folder")
 		playerFolder.Name = "SackTools"
 		playerFolder.Parent = ReplicatedStorage
 	end
-	
+
 	local function storeObjectActionCallback(_, v18)
 		if v18 ~= Enum.UserInputState.Begin then
 			return Enum.ContextActionResult.Pass
@@ -531,21 +531,21 @@ task.spawn(function()
 				if FakeAmount + RealAmount >= StoreLimit then
 					return
 				end
-				
+
 				if v16:HasTag("KiwiStorable") then
 					Sack.Handle.Add:Play()
 					FakeAmount += 1
 					StoredLabel.Text = FakeAmount + RealAmount .. "/" .. StoreLimit
 					v16.Parent = playerFolder
-					
+
 					return
 				end
-				
+
 				RealAmount += 1
 				StoredLabel.Text = FakeAmount + RealAmount .. "/" .. StoreLimit
 				local Value = Instance.new("NumberValue", playerFolder)
 				Value.Name = "ServerDrop"
-				
+
 				l_StoreItem_0:FireServer(v16)
 			else
 				local Dropped = false
@@ -566,7 +566,7 @@ task.spawn(function()
 						break
 					elseif itemToDrop.Name == "ServerDrop" then
 						itemToDrop:Destroy()
-						
+
 						break
 					end
 				end
@@ -575,15 +575,15 @@ task.spawn(function()
 					Sack.Handle.Empty:Play()
 					FakeAmount -= 1
 					StoredLabel.Text = FakeAmount + RealAmount .. "/" .. StoreLimit
-					
+
 					return
 				end
-				
+
 				if RealAmount > 0 then
 					RealAmount -= 1
 					StoredLabel.Text = FakeAmount + RealAmount .. "/" .. StoreLimit
 				end
-				
+
 				l_DropItem_0:FireServer()
 			end
 			return Enum.ContextActionResult.Sink
@@ -681,13 +681,13 @@ task.spawn(function()
 				if v10:HasTag("KiwiPickable") and v10:IsA("Model") then
 					local RandomNum = math.random(1, 100000000)
 					local Clone: Model = v10:Clone()
-					
+
 					Clone:ScaleTo(v10:GetAttribute("Size"))
-					
+
 					v10.Name = v10:GetAttribute("Name") .. RandomNum
 					v10.Parent = ReplicatedStorage
 					v10:SetAttribute("OGName", v10.Name)
-					
+
 					local Tool = Instance.new("Tool", l_LocalPlayer_0.Backpack)
 					Tool.Name = v10:GetAttribute("Name")
 					Tool.CanBeDropped = false
@@ -697,13 +697,13 @@ task.spawn(function()
 					local Handle: BasePart = Clone.PrimaryPart
 					Handle.Name = "Handle"
 					Handle.Parent = Tool
-					
+
 					for _, part: Object in Clone:GetChildren() do
 						if part:IsA("Model") or part:IsA("BasePart") then
 							part.Parent = Handle
 						end
 					end
-					
+
 					Clone:Destroy()
 
 					return
@@ -732,7 +732,7 @@ task.spawn(function()
 							Model.Parent = workspace.RuntimeItems
 							Model.PrimaryPart.CFrame = CFrame.new(spawnPosition)
 						end
-						
+
 						v20:Destroy()
 					else
 						l_DropTool_0:FireServer(v20)
@@ -942,9 +942,9 @@ task.spawn(function()
 
 				task.wait(0.1)
 
-				if not v33.PrimaryPart:FindFirstChild("DragWeldConstraint") then
-					local DragWeldConstraint = Instance.new("WeldConstraint", v33.PrimaryPart)
-					DragWeldConstraint.Part0 = v33.PrimaryPart
+				if not v34.PrimaryPart:FindFirstChild("DragWeldConstraint") then
+					local DragWeldConstraint = Instance.new("WeldConstraint", v34.PrimaryPart)
+					DragWeldConstraint.Part0 = v34.PrimaryPart
 					DragWeldConstraint.Part1 = v36
 					DragWeldConstraint.Name = "DragWeldConstraint"
 
@@ -955,7 +955,7 @@ task.spawn(function()
 		else
 			if v35 then
 				l_RequestUnweld_0:FireServer(v35)
-				
+
 				task.wait(0.1)
 
 				local DragWeldConstraint = v35.PrimaryPart:FindFirstChild("DragWeldConstraint")
@@ -1054,7 +1054,7 @@ task.spawn(function()
 			if v93:HasTag("KiwiDragSkip") then
 				return
 			end
-			
+
 			v33 = true
 			v34 = v93
 			v38 = false
