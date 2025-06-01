@@ -25,7 +25,7 @@ repeat
 until game:IsLoaded()
 
 -- Main Variables
-LatestVersion = string.match(game:HttpGet("https://raw.githubusercontent.com/dhjasujfhasdfgsdyufgsdfusjfhdsfsadgfhja/-/refs/heads/main/ver"), "%S+")
+LatestVersion = string.match(game:HttpGet("https://raw.githubusercontent.com/dhjasujfhasdfgsdyufgsdfusjfhdsfsadgfhja/-/refs/heads/main/%2B"), "%S+")
 LocalPlayer = Players.LocalPlayer
 Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 ItemFunctions = {}
