@@ -1,6 +1,6 @@
 -- Version
-Ver = "v1.0.8"
-Upd = "tons of bug fixes."
+Ver = "v1.0.81"
+Upd = "drag distance fix."
 
 -- Place Check
 if game.PlaceId ~= 70876832253163 then
@@ -94,9 +94,9 @@ KiwiAPI.AddFakeMoney = function(amount: number)
 	if type(amount) ~= "number" then
 		return KiwiAPI.Print("⛔ KiwiAPI.AddFakeMoney --> amount must be a number.", error)
 	end
-	
+
 	local Money = KiwiAPI.GetMoney()
-	
+
 	KiwiAPI.MoneyUpdating = true
 	KiwiAPI.FakeMoney += amount
 	Money.Value += amount
@@ -369,9 +369,9 @@ Money:GetPropertyChangedSignal("Value"):Connect(function()
 	end
 
 	KiwiAPI.MoneyUpdating = true
-	
+
 	warn(KiwiAPI.FakeMoney)
-	
+
 	Money.Value += KiwiAPI.FakeMoney
 
 	task.wait(0.1)
@@ -1011,7 +1011,7 @@ task.spawn(function()
 		else
 			local l_CFrame_0 = l_CurrentCamera_0.CFrame
 			local l_LookVector_0 = l_CFrame_0.LookVector
-			local v87 = l_CFrame_0.Position + l_LookVector_0 * 10
+			local v87 = l_CFrame_0.Position + l_LookVector_0 * KiwiAPI.DragDistance
 			local l_v34_Pivot_0 = v34:GetPivot()
 			if v18.isBound(v23.Action.RotateObject) and v18.isPressed(v23.Action.RotateObject) then
 				v38 = true
