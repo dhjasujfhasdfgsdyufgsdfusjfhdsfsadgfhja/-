@@ -1,6 +1,6 @@
 -- Version
-Ver = "v1.0.81"
-Upd = "drag distance fix."
+Ver = "v1.0.82"
+Upd = "changes to pickup/drop system."
 
 -- Place Check
 if game.PlaceId ~= 70876832253163 then
@@ -14,10 +14,26 @@ RunService = game:GetService("RunService")
 SoundService = game:GetService("SoundService")
 
 -- Stop Scripts
-ReplicatedStorage:WaitForChild("Client"):WaitForChild("Handlers"):WaitForChild("DraggableItemHandlers"):WaitForChild("ClientDraggableObjectHandler").Enabled = false
-ReplicatedStorage:WaitForChild("Client"):WaitForChild("Handlers"):WaitForChild("DraggableItemHandlers"):WaitForChild("ClientToolObjectHandler").Enabled = false
-ReplicatedStorage:WaitForChild("Client"):WaitForChild("Handlers"):WaitForChild("DraggableItemHandlers"):WaitForChild("ClientObjectStorageHandler").Enabled = false
-ReplicatedStorage:WaitForChild("Client"):WaitForChild("Handlers"):WaitForChild("DraggableItemHandlers"):WaitForChild("ClientActivatableObjectHandler").Enabled = false
+ReplicatedStorage:WaitForChild("Client")
+	:WaitForChild("Handlers")
+	:WaitForChild("DraggableItemHandlers")
+	:WaitForChild("ClientDraggableObjectHandler").Enabled =
+	false
+ReplicatedStorage:WaitForChild("Client")
+	:WaitForChild("Handlers")
+	:WaitForChild("DraggableItemHandlers")
+	:WaitForChild("ClientToolObjectHandler").Enabled =
+	false
+ReplicatedStorage:WaitForChild("Client")
+	:WaitForChild("Handlers")
+	:WaitForChild("DraggableItemHandlers")
+	:WaitForChild("ClientObjectStorageHandler").Enabled =
+	false
+ReplicatedStorage:WaitForChild("Client")
+	:WaitForChild("Handlers")
+	:WaitForChild("DraggableItemHandlers")
+	:WaitForChild("ClientActivatableObjectHandler").Enabled =
+	false
 
 -- Wait For Game
 repeat
@@ -25,7 +41,10 @@ repeat
 until game:IsLoaded()
 
 -- Main Variables
-LatestVersion = string.match(game:HttpGet("https://raw.githubusercontent.com/dhjasujfhasdfgsdyufgsdfusjfhdsfsadgfhja/-/refs/heads/main/%2B"), "%S+")
+LatestVersion = string.match(
+	game:HttpGet("https://raw.githubusercontent.com/dhjasujfhasdfgsdyufgsdfusjfhdsfsadgfhja/-/refs/heads/main/%2B"),
+	"%S+"
+)
 LocalPlayer = Players.LocalPlayer
 Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 ItemFunctions = {}
@@ -147,7 +166,8 @@ KiwiAPI.MakeSellable = function(item: Instance, amount: number, noMoneyBag: bool
 						SellSound:Play()
 
 						Money_Bag.Parent = workspace.RuntimeItems
-						Money_Bag.MoneyBag.CFrame = hit.CFrame * CFrame.Angles(0, math.rad(90), 0) + Vector3.new(0, 3, 0)
+						Money_Bag.MoneyBag.CFrame = hit.CFrame * CFrame.Angles(0, math.rad(90), 0)
+							+ Vector3.new(0, 3, 0)
 						Money_Bag.MoneyBag.BillboardGui.TextLabel.Text = `${amount}`
 						Money_Bag.MoneyBag.CollectPrompt.Triggered:Connect(function()
 							if not Collected then
@@ -181,7 +201,7 @@ KiwiAPI.MakeCrafting = function(data)
 			[6] = "",
 			[7] = "",
 			[8] = "",
-			[9] = ""
+			[9] = "",
 		},
 		reward = "rbxassetid://79581329552900",
 		cost = 50,
@@ -189,13 +209,20 @@ KiwiAPI.MakeCrafting = function(data)
 		color = Color3.fromRGB(239, 184, 56),
 		material = "Metal",
 		transparency = 0,
-		extra = function() end
+		extra = function() end,
 	}
 
 	for key, value in pairs(defaults) do
 		if data[key] == nil then
 			data[key] = value
-			KiwiAPI.Print("⚠️ KiwiAPI.MakeCrafting --> property missing '" .. key .. "', replaced with '" .. tostring(value) .. "'.", warn)
+			KiwiAPI.Print(
+				"⚠️ KiwiAPI.MakeCrafting --> property missing '"
+					.. key
+					.. "', replaced with '"
+					.. tostring(value)
+					.. "'.",
+				warn
+			)
 		end
 	end
 
@@ -206,7 +233,7 @@ KiwiAPI.MakeCrafting = function(data)
 		local positionInFront = HRP.Position + (forward * data.distance)
 
 		local raycastParams = RaycastParams.new()
-		raycastParams.FilterDescendantsInstances = {Character}
+		raycastParams.FilterDescendantsInstances = { Character }
 		raycastParams.FilterType = Enum.RaycastFilterType.Exclude
 
 		local origin = positionInFront + Vector3.new(0, 44, 0)
@@ -230,7 +257,7 @@ KiwiAPI.MakeCrafting = function(data)
 				if Expected ~= "" then
 					Touching[tonumber(grid.Name)] = {
 						Status = false,
-						Obj = nil
+						Obj = nil,
 					}
 
 					grid.Touched:Connect(function(hit: BasePart)
@@ -422,21 +449,31 @@ task.spawn(function()
 					return
 				end
 
-				l_ActivateObject_0:InvokeServer(v19):andThen(function(v23, ...)
-					if v23 then
-						local v24 = v17[v19.Name]
-						if v24 then
-							v24(v19, ...)
+				l_ActivateObject_0
+					:InvokeServer(v19)
+					:andThen(function(v23, ...)
+						if v23 then
+							local v24 = v17[v19.Name]
+							if v24 then
+								v24(v19, ...)
+							end
 						end
-					end
-				end):timeout(10)
+					end)
+					:timeout(10)
 			end
 			return Enum.ContextActionResult.Sink
 		end
 	end
 	local function updateBind(v26)
 		if v26 and not v20 then
-			v16.bindAction(v11.Action.ActivateObject, activateObjectActionCallback, v11.ActionContext[v11.Action.ActivateObject], Enum.KeyCode.E, Enum.KeyCode.DPadLeft, 3)
+			v16.bindAction(
+				v11.Action.ActivateObject,
+				activateObjectActionCallback,
+				v11.ActionContext[v11.Action.ActivateObject],
+				Enum.KeyCode.E,
+				Enum.KeyCode.DPadLeft,
+				3
+			)
 			v20 = true
 		elseif not v26 and v20 then
 			v16.unbindAction(v11.Action.ActivateObject)
@@ -453,7 +490,15 @@ task.spawn(function()
 			return
 		else
 			local l_Value_0 = l_HoveringObject_0.Value
-			if l_Value_0 and l_isValidDraggableObject_0(l_Value_0) and l_Value_0:HasTag(v9.Activatable) and (not l_Value_0:GetAttribute("OwnerId") or l_Value_0:GetAttribute("OwnerId") == l_LocalPlayer_0.UserId) then
+			if
+				l_Value_0
+				and l_isValidDraggableObject_0(l_Value_0)
+				and l_Value_0:HasTag(v9.Activatable)
+				and (
+					not l_Value_0:GetAttribute("OwnerId")
+						or l_Value_0:GetAttribute("OwnerId") == l_LocalPlayer_0.UserId
+				)
+			then
 				v19 = l_Value_0
 				if l_Value_0:HasTag("ShopItem") then
 					v19 = nil
@@ -492,7 +537,8 @@ task.spawn(function()
 	local l_LocalPlayer_0 = l_Players_0.LocalPlayer
 	local l_StoreItem_0 = ReplicatedStorage.Remotes.StoreItem
 	local l_DropItem_0 = ReplicatedStorage.Remotes.DropItem
-	local l_ClientDraggableObjectHandler_0 = ReplicatedStorage.Client.Handlers.DraggableItemHandlers.ClientDraggableObjectHandler
+	local l_ClientDraggableObjectHandler_0 =
+		ReplicatedStorage.Client.Handlers.DraggableItemHandlers.ClientDraggableObjectHandler
 	local l_HoveringObject_0 = l_ClientDraggableObjectHandler_0.HoveringObject
 	local l_Shared_0 = ReplicatedStorage.Shared
 	local v11 = require(ReplicatedStorage.Client.Controllers.ActionController)
@@ -554,7 +600,12 @@ task.spawn(function()
 				local items = playerFolder:GetChildren()
 				for i = #items, 1, -1 do
 					local itemToDrop = items[i]
-					if itemToDrop:IsA("Model") and itemToDrop.PrimaryPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+					if
+						itemToDrop:IsA("Model")
+						and itemToDrop.PrimaryPart
+						and LocalPlayer.Character
+						and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+					then
 						local LookVector = Sack.Handle.CFrame.LookVector
 						local dropPosition = Sack.Handle.Position + (LookVector * 1.5) + Vector3.new(0, 0.35, 0)
 						local forwardFacingCFrame = CFrame.new(dropPosition, dropPosition + LookVector)
@@ -593,7 +644,14 @@ task.spawn(function()
 	local function updateStoreBinding(v20)
 		if v20 ~= v11.isBound(v12.Action.StoreObject) then
 			if v20 then
-				v11.bindAction(v12.Action.StoreObject, storeObjectActionCallback, v12.ActionContext[v12.Action.StoreObject], Enum.KeyCode.F, Enum.KeyCode.ButtonY, v12.ActionPriority.Low)
+				v11.bindAction(
+					v12.Action.StoreObject,
+					storeObjectActionCallback,
+					v12.ActionContext[v12.Action.StoreObject],
+					Enum.KeyCode.F,
+					Enum.KeyCode.ButtonY,
+					v12.ActionPriority.Low
+				)
 				return
 			else
 				v11.unbindAction(v12.Action.StoreObject)
@@ -653,7 +711,8 @@ end)
 -- Pickup System
 task.spawn(function()
 	local l_LocalPlayer_0 = game:GetService("Players").LocalPlayer
-	local l_HoveringObject_0 = ReplicatedStorage.Client.Handlers.DraggableItemHandlers.ClientDraggableObjectHandler.HoveringObject
+	local l_HoveringObject_0 =
+		ReplicatedStorage.Client.Handlers.DraggableItemHandlers.ClientDraggableObjectHandler.HoveringObject
 	local v3 = require(ReplicatedStorage.Shared.Utils.DraggableObjectUtil)
 	local l_isValidDraggableObject_0 = v3.isValidDraggableObject
 	local l_isDraggableObjectWelded_0 = v3.isDraggableObjectWelded
@@ -679,6 +738,23 @@ task.spawn(function()
 			return Enum.ContextActionResult.Pass
 		else
 			if v10 then
+				if v10:HasTag("Special") then
+					local toolMasterName = v10:GetAttribute("ToolName")
+					if toolMasterName then
+						local toolMaster = ReplicatedStorage:FindFirstChild(toolMasterName)
+						if toolMaster and toolMaster:IsA("Tool") then
+							local newTool = toolMaster:Clone()
+							newTool.Name = v10:GetAttribute("OGName")
+							newTool.Parent = l_LocalPlayer_0.Backpack
+							
+							v10:Destroy()
+							return Enum.ContextActionResult.Sink
+						end
+					end
+
+					return Enum.ContextActionResult.Pass
+				end
+				
 				if v10:HasTag("KiwiPickable") and v10:IsA("Model") then
 					local RandomNum = math.random(1, 100000000)
 					local Clone: Model = v10:Clone()
@@ -686,7 +762,7 @@ task.spawn(function()
 					Clone:ScaleTo(v10:GetAttribute("Size"))
 
 					v10.Name = v10:GetAttribute("Name") .. RandomNum
-					v10.Parent = ReplicatedStorage
+					v10.Parent = ReplicatedStorage.Assets
 					v10:SetAttribute("OGName", v10.Name)
 
 					local Tool = Instance.new("Tool", l_LocalPlayer_0.Backpack)
@@ -721,6 +797,35 @@ task.spawn(function()
 			local v20 = getCurrentlyHeldTool(l_LocalPlayer_0.Character)
 			if v20 then
 				if v20:HasTag("Droppable") then
+					if v20:HasTag("Special") then
+						local modelMasterName = v20:GetAttribute("WorldModelName")
+						if modelMasterName then
+							local modelMaster = ReplicatedStorage:FindFirstChild(modelMasterName)
+							if modelMaster and modelMaster:IsA("Model") then
+								local modelToDrop = modelMaster:Clone()
+
+								local Character = l_LocalPlayer_0.Character
+								local forwardVector = Character.HumanoidRootPart.CFrame.LookVector
+								local spawnPosition = Character.HumanoidRootPart.Position + (forwardVector * 7)
+								
+								local Price = v20:GetAttribute("Price")
+								if Price then
+									_G.KiwiAPI.MakeSellable(modelToDrop, Price)
+								end
+								
+								modelToDrop.Name = modelMaster:GetAttribute("OGName") or modelMaster.Name 
+								modelToDrop.Parent = workspace.RuntimeItems
+								if modelToDrop.PrimaryPart then
+									modelToDrop:SetPrimaryPartCFrame(CFrame.new(spawnPosition))
+								end
+
+								v20:Destroy()
+								return Enum.ContextActionResult.Sink
+							end
+						end
+						return Enum.ContextActionResult.Pass
+					end
+					
 					local RandomAttribute = v20:GetAttribute("Random")
 
 					if RandomAttribute then
@@ -733,7 +838,7 @@ task.spawn(function()
 							Model.Parent = workspace.RuntimeItems
 							Model.PrimaryPart.CFrame = CFrame.new(spawnPosition)
 						end
-
+						
 						v20:Destroy()
 					else
 						l_DropTool_0:FireServer(v20)
@@ -748,7 +853,14 @@ task.spawn(function()
 	local function updatePickBound(v22)
 		local v23 = v6.isBound(v7.Action.PickUpObject)
 		if v22 and not v23 then
-			v6.bindAction(v7.Action.PickUpObject, pickObjectActionCallback, v7.ActionContext[v7.Action.PickUpObject], Enum.KeyCode.E, Enum.KeyCode.DPadLeft, v7.ActionPriority.Low)
+			v6.bindAction(
+				v7.Action.PickUpObject,
+				pickObjectActionCallback,
+				v7.ActionContext[v7.Action.PickUpObject],
+				Enum.KeyCode.E,
+				Enum.KeyCode.DPadLeft,
+				v7.ActionPriority.Low
+			)
 			return
 		else
 			if not v22 and v23 then
@@ -760,7 +872,14 @@ task.spawn(function()
 	local function updateDropBound(v25)
 		local v26 = v6.isBound(v7.Action.DropObject)
 		if v25 and not v26 then
-			v6.bindAction(v7.Action.DropObject, dropObjectActionCallback, v7.ActionContext[v7.Action.DropObject], Enum.KeyCode.Backspace, Enum.KeyCode.DPadLeft, v7.ActionPriority.Low)
+			v6.bindAction(
+				v7.Action.DropObject,
+				dropObjectActionCallback,
+				v7.ActionContext[v7.Action.DropObject],
+				Enum.KeyCode.Backspace,
+				Enum.KeyCode.DPadLeft,
+				v7.ActionPriority.Low
+			)
 			return
 		else
 			if not v25 and v26 then
@@ -778,7 +897,16 @@ task.spawn(function()
 		else
 			local l_Value_0 = l_HoveringObject_0.Value
 			local v30 = getCurrentlyHeldTool(l_Character_0)
-			if l_Value_0 and l_isValidDraggableObject_0(l_Value_0) and not l_isDraggableObjectWelded_0(l_Value_0) and l_Value_0:HasTag("ToolObject") and (not l_Value_0:GetAttribute("OwnerId") or l_Value_0:GetAttribute("OwnerId") == l_LocalPlayer_0.UserId) then
+			if
+				l_Value_0
+				and l_isValidDraggableObject_0(l_Value_0)
+				and not l_isDraggableObjectWelded_0(l_Value_0)
+				and l_Value_0:HasTag("ToolObject")
+				and (
+					not l_Value_0:GetAttribute("OwnerId")
+						or l_Value_0:GetAttribute("OwnerId") == l_LocalPlayer_0.UserId
+				)
+			then
 				v10 = l_Value_0
 				if l_Value_0:HasTag("ShopItem") then
 					v10 = nil
@@ -814,7 +942,8 @@ end)
 
 -- Dragging System
 task.spawn(function()
-	local script = game:GetService("ReplicatedStorage").Client.Handlers.DraggableItemHandlers.ClientDraggableObjectHandler	
+	local script =
+		game:GetService("ReplicatedStorage").Client.Handlers.DraggableItemHandlers.ClientDraggableObjectHandler
 	local l_ReplicatedStorage_0 = game:GetService("ReplicatedStorage")
 	local l_Players_0 = game:GetService("Players")
 	local l_RunService_0 = game:GetService("RunService")
@@ -862,7 +991,7 @@ task.spawn(function()
 		local v48 = RaycastParams.new()
 		v48.FilterType = Enum.RaycastFilterType.Exclude
 		v48.FilterDescendantsInstances = {
-			l_LocalPlayer_0.Character
+			l_LocalPlayer_0.Character,
 		}
 		return workspace:Raycast(l_Position_0, v47, v48)
 	end
@@ -892,9 +1021,10 @@ task.spawn(function()
 			local v56 = OverlapParams.new()
 			v56.FilterType = Enum.RaycastFilterType.Exclude
 			v56.FilterDescendantsInstances = {
-				v53
+				v53,
 			}
-			local l_workspace_PartBoundsInBox_0 = workspace:GetPartBoundsInBox(l_v53_BoundingBox_0, l_v53_ExtentsSize_0 * 1.05, v56)
+			local l_workspace_PartBoundsInBox_0 =
+				workspace:GetPartBoundsInBox(l_v53_BoundingBox_0, l_v53_ExtentsSize_0 * 1.05, v56)
 			local v58 = nil
 			for _, v60 in l_workspace_PartBoundsInBox_0 do
 				if v60:IsA("BasePart") and l_isValidWeldTarget_0(v60) then
@@ -1046,7 +1176,7 @@ task.spawn(function()
 			end
 		end
 	end
-	local function v94(v91, _, v93)		
+	local function v94(v91, _, v93)
 		if not v91 or not l_isValidDraggableObject_0(v93) then
 			v33 = false
 			v34 = nil
@@ -1061,7 +1191,14 @@ task.spawn(function()
 			v38 = false
 			v42 = v24.new(v93)
 			if v93:HasTag("LiquidContainer") then
-				v18.bindAction(v23.Action.PourLiquid, v83, v23.ActionContext[v23.Action.PourLiquid], Enum.KeyCode.F, Enum.KeyCode.DPadRight, v23.ActionPriority.Low)
+				v18.bindAction(
+					v23.Action.PourLiquid,
+					v83,
+					v23.ActionContext[v23.Action.PourLiquid],
+					Enum.KeyCode.F,
+					Enum.KeyCode.DPadRight,
+					v23.ActionPriority.Low
+				)
 			end
 			if not v14.Experimental.ServerOwnedDragging then
 				if v93:HasTag(v22.RopedObject) then
@@ -1093,9 +1230,7 @@ task.spawn(function()
 			return
 		end
 	end
-	local function v97(_, _)
-
-	end
+	local function v97(_, _) end
 	local function v73(_, v70, v71)
 		if v19.getLastInputCategory() == "Gamepad" and v71.UserInputType == Enum.UserInputType.MouseButton1 then
 			return Enum.ContextActionResult.Pass
@@ -1154,28 +1289,56 @@ task.spawn(function()
 				end
 				if v18.isBound(v23.Action.DragObject) ~= v100 then
 					if v100 then
-						v18.bindAction(v23.Action.DragObject, v73, v23.ActionContext[v23.Action.DragObject], Enum.UserInputType.MouseButton1, Enum.KeyCode.ButtonR2, v23.ActionPriority.High)
+						v18.bindAction(
+							v23.Action.DragObject,
+							v73,
+							v23.ActionContext[v23.Action.DragObject],
+							Enum.UserInputType.MouseButton1,
+							Enum.KeyCode.ButtonR2,
+							v23.ActionPriority.High
+						)
 					else
 						v18.unbindAction(v23.Action.DragObject)
 					end
 				end
 				if v18.isBound(v23.Action.RotateObject) ~= v102 then
 					if v102 then
-						v18.bindAction(v23.Action.RotateObject, v23.noOp, v23.ActionContext[v23.Action.RotateObject], Enum.KeyCode.R, Enum.KeyCode.ButtonL2, v23.ActionPriority.Low)
+						v18.bindAction(
+							v23.Action.RotateObject,
+							v23.noOp,
+							v23.ActionContext[v23.Action.RotateObject],
+							Enum.KeyCode.R,
+							Enum.KeyCode.ButtonL2,
+							v23.ActionPriority.Low
+						)
 					else
 						v18.unbindAction(v23.Action.RotateObject)
 					end
 				end
 				if v18.isBound(v23.Action.ChangeRotationAxis) ~= v102 then
 					if v102 then
-						v18.bindAction(v23.Action.ChangeRotationAxis, v79, v23.ActionContext[v23.Action.ChangeRotationAxis], Enum.KeyCode.T, Enum.KeyCode.ButtonY, v23.ActionPriority.Low)
+						v18.bindAction(
+							v23.Action.ChangeRotationAxis,
+							v79,
+							v23.ActionContext[v23.Action.ChangeRotationAxis],
+							Enum.KeyCode.T,
+							Enum.KeyCode.ButtonY,
+							v23.ActionPriority.Low
+						)
 					else
 						v18.unbindAction(v23.Action.ChangeRotationAxis)
 					end
 				end
 				if v101 ~= v18.isBound(v23.Action.WeldObject) then
 					if v101 then
-						v18.bindAction(v23.Action.WeldObject, v76, v23.ActionContext[v23.Action.WeldObject], Enum.KeyCode.Z, Enum.KeyCode.ButtonX, v23.ActionPriority.Medium)
+						v18.bindAction(
+							v23.Action.WeldObject,
+							v76,
+							v23.ActionContext[v23.Action.WeldObject],
+							Enum.KeyCode.Z,
+							Enum.KeyCode.ButtonX,
+							v23.ActionPriority.Medium
+						)
 					else
 						v18.unbindAction(v23.Action.WeldObject)
 					end
