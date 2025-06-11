@@ -496,7 +496,7 @@ task.spawn(function()
 				and l_Value_0:HasTag(v9.Activatable)
 				and (
 					not l_Value_0:GetAttribute("OwnerId")
-						or l_Value_0:GetAttribute("OwnerId") == l_LocalPlayer_0.UserId
+					or l_Value_0:GetAttribute("OwnerId") == l_LocalPlayer_0.UserId
 				)
 			then
 				v19 = l_Value_0
@@ -746,7 +746,7 @@ task.spawn(function()
 							local newTool = toolMaster:Clone()
 							newTool.Name = v10:GetAttribute("OGName")
 							newTool.Parent = l_LocalPlayer_0.Backpack
-							
+
 							v10:Destroy()
 							return Enum.ContextActionResult.Sink
 						end
@@ -754,7 +754,7 @@ task.spawn(function()
 
 					return Enum.ContextActionResult.Pass
 				end
-				
+
 				if v10:HasTag("KiwiPickable") and v10:IsA("Model") then
 					local RandomNum = math.random(1, 100000000)
 					local Clone: Model = v10:Clone()
@@ -807,13 +807,13 @@ task.spawn(function()
 								local Character = l_LocalPlayer_0.Character
 								local forwardVector = Character.HumanoidRootPart.CFrame.LookVector
 								local spawnPosition = Character.HumanoidRootPart.Position + (forwardVector * 7)
-								
+
 								local Price = v20:GetAttribute("Price")
 								if Price then
 									_G.KiwiAPI.MakeSellable(modelToDrop, Price)
 								end
-								
-								modelToDrop.Name = modelMaster:GetAttribute("OGName") or modelMaster.Name 
+
+								modelToDrop.Name = modelMaster:GetAttribute("OGName") or modelMaster.Name
 								modelToDrop.Parent = workspace.RuntimeItems
 								if modelToDrop.PrimaryPart then
 									modelToDrop:SetPrimaryPartCFrame(CFrame.new(spawnPosition))
@@ -825,7 +825,7 @@ task.spawn(function()
 						end
 						return Enum.ContextActionResult.Pass
 					end
-					
+
 					local RandomAttribute = v20:GetAttribute("Random")
 
 					if RandomAttribute then
@@ -838,7 +838,7 @@ task.spawn(function()
 							Model.Parent = workspace.RuntimeItems
 							Model.PrimaryPart.CFrame = CFrame.new(spawnPosition)
 						end
-						
+
 						v20:Destroy()
 					else
 						l_DropTool_0:FireServer(v20)
@@ -904,7 +904,7 @@ task.spawn(function()
 				and l_Value_0:HasTag("ToolObject")
 				and (
 					not l_Value_0:GetAttribute("OwnerId")
-						or l_Value_0:GetAttribute("OwnerId") == l_LocalPlayer_0.UserId
+					or l_Value_0:GetAttribute("OwnerId") == l_LocalPlayer_0.UserId
 				)
 			then
 				v10 = l_Value_0
